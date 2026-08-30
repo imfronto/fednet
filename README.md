@@ -219,13 +219,23 @@ StevenBlack's hosts file:
 - `https://blocklistproject.github.io/Lists/scam.txt`
 - `https://blocklistproject.github.io/Lists/fraud.txt`
 - `https://blocklistproject.github.io/Lists/redirect.txt`
+- `https://blocklistproject.github.io/Lists/abuse.txt`
+- `https://blocklistproject.github.io/Lists/smart-tv.txt`
+- `https://blocklistproject.github.io/Lists/piracy.txt`
+- `https://blocklistproject.github.io/Lists/torrent.txt`
+- `https://blocklistproject.github.io/Lists/crypto.txt`
+
+Note that `piracy.txt`/`torrent.txt` block those categories of sites
+entirely (not just malicious ones within them), and `crypto.txt` can catch
+some legitimate exchanges/wallets alongside scams — worth keeping in mind
+if something crypto- or torrent-related stops resolving.
 
 blocklistproject also publishes lists that block entire platforms outright
 (facebook.txt, youtube.txt, tiktok.txt, twitter.txt, whatsapp.txt, gambling,
-porn, crypto, vaping, drugs, fortnite) — deliberately not added since they
-break those apps/sites entirely rather than just stripping ads. Add via the
-admin UI (**Domains → Adlists**) or the API, then `docker exec pihole
-pihole -g` to apply.
+porn, vaping, drugs, fortnite) — deliberately not added since they break
+those apps/sites entirely rather than just stripping ads. Add via the admin
+UI (**Domains → Adlists**) or the API, then `docker exec pihole pihole -g`
+to apply.
 
 Pi-hole's blocklist database (`gravity.db`) lives under `data/pihole/`,
 which is git-ignored — a fresh checkout starts with none configured until
