@@ -1,0 +1,22 @@
+networks:
+  edge:
+    external: true
+
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8081:80/tcp"
+    environment:
+      - TZ=${TZ:-UTC}
+      - FTLCONF_webserver_api_password=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+    volumes:
+      - ./data/pihole/etc-pihole:/etc/pihole
+      - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN

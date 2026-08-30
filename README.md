@@ -26,6 +26,11 @@ make up
 - Dashboard: `http://<tailscale-magicdns-name>/`
 - Portainer: `http://<tailscale-magicdns-name>:9000`
 - Uptime Kuma: `http://<tailscale-magicdns-name>:3001`
+- Pi-hole: `http://<tailscale-magicdns-name>:8081/admin` (password in `.env` as `PIHOLE_PASSWORD`)
+
+To actually get ad-blocking, point your router's DHCP DNS setting (or each
+device individually) at this server's LAN IP — Pi-hole only filters queries
+that are sent to it.
 
 ## Adding a new service
 

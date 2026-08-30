@@ -7,3 +7,7 @@
         href: http://fednet:3001
         description: Service monitoring
         icon: uptime-kuma.png
+    - Pi-hole:
+        href: http://fednet:8081/admin
+        description: Network-wide ad blocking
+        icon: pi-hole.png

@@ -12,6 +12,7 @@ fi
 
 docker network inspect edge >/dev/null 2>&1 || docker network create edge
 
-mkdir -p data/caddy/data data/caddy/config data/portainer data/uptime-kuma
+mkdir -p data/caddy/data data/caddy/config data/portainer data/uptime-kuma \
+  data/pihole/etc-pihole data/pihole/etc-dnsmasq.d
 
 echo "Setup done. Copy .env.example to .env, then run 'make up'."
