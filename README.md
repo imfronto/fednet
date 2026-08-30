@@ -560,6 +560,14 @@ breakdowns. Posts to `PIHOLE_STATS_WEBHOOK_URL`, falling back to
 `GRAVITY_WEBHOOK_URL`. Tune `PIHOLE_STATS_TOP_COUNT` (default 5) and
 `PIHOLE_STATS_INTERVAL_SECONDS` (default 3600) in `.env`.
 
+Sent as a Discord embed (not a plain-text message) — a titled card with
+each stat as its own labeled field, colored with Homepage's sky-blue
+accent (`#38BDF8`) to match the Grafana/Uptime Kuma theming. This is
+Discord-specific (`{"embeds": [...]}` isn't a Slack webhook field), so
+if you ever point `PIHOLE_STATS_WEBHOOK_URL` at a Slack incoming
+webhook instead, the embed will silently not render — unlike the flood
+and gravity watchdogs' plain-text alerts, which work with either.
+
 **On "DDoS" specifically** — this stack has no port-forwarding and
 nothing exposed to the public internet by design, so a classic
 internet-sourced volumetric DDoS doesn't really apply here. What *is*

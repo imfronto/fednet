@@ -47,9 +47,14 @@ send_digest() {
 
   curl -fsS -X DELETE "$PIHOLE_URL/api/auth" -H "sid: $sid" >/dev/null 2>&1 || true
 
-  msg=$(jq -n \
+  iso_now=$(date -u -d "@$now" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) || iso_now=""
+
+  # Discord embed: fields render as a clean label/value grid instead of
+  # a wall of plain text. EMBED_COLOR is fednet's Homepage accent
+  # (sky-400, #38BDF8) so this matches the Grafana/Uptime Kuma theming.
+  payload=$(jq -n \
     --argjson hist "$hist" --argjson dom "$dom" --argjson cli "$cli" --argjson qt "$qt" \
-    --argjson from "$from" \
+    --argjson from "$from" --arg iso "$iso_now" \
     '
     ($hist.history // [] | map(select(.timestamp >= $from))) as $buckets |
     ($buckets | map(.total) | add // 0) as $total |
@@ -57,18 +62,28 @@ send_digest() {
     ($buckets | map(.cached) | add // 0) as $cached |
     ($buckets | map(.forwarded) | add // 0) as $forwarded |
     (if $total > 0 then (($blocked / $total) * 100) else 0 end) as $pct |
-    ($dom.domains // [] | map("\(.count)x \(.domain)") | join("\n")) as $domlines |
-    ($cli.clients // [] | map("\(.count)x \(if .name != "" then .name else .ip end)") | join("\n")) as $clilines |
-    ($qt.types // {} | to_entries | map(select(.value > 0)) | sort_by(-.value) | map("\(.key) \(.value)") | join(", ")) as $qtline |
-    "**fednet pihole — last hour**\n" +
-    "Queries: \($total) total, \($blocked) blocked (\(($pct * 10 | round) / 10)%)\n" +
-    "Cached: \($cached) · Forwarded: \($forwarded)\n\n" +
-    "Top blocked domains:\n" + (if $domlines == "" then "(none)" else $domlines end) + "\n\n" +
-    "Top clients:\n" + (if $clilines == "" then "(none)" else $clilines end) + "\n\n" +
-    "Query types: " + (if $qtline == "" then "(none)" else $qtline end)
+    ($dom.domains // [] | map("**\(.count)** — \(.domain)") | join("\n")) as $domlines |
+    ($cli.clients // [] | map("**\(.count)** — \(if .name != "" then .name else .ip end)") | join("\n")) as $clilines |
+    ($qt.types // {} | to_entries | map(select(.value > 0)) | sort_by(-.value) | map("\(.key) \(.value)") | join("  ·  ")) as $qtline |
+    {
+      embeds: [
+        ({
+          title: "📊 Pi-hole — Last Hour",
+          color: 3718648,
+          fields: [
+            {name: "Total Queries", value: ($total | tostring), inline: true},
+            {name: "Blocked", value: "\($blocked) (\(($pct * 10 | round) / 10)%)", inline: true},
+            {name: "Cached / Forwarded", value: "\($cached) / \($forwarded)", inline: true},
+            {name: "Top Blocked Domains", value: (if $domlines == "" then "_none_" else $domlines end), inline: false},
+            {name: "Top Clients", value: (if $clilines == "" then "_none_" else $clilines end), inline: false},
+            {name: "Query Types", value: (if $qtline == "" then "_none_" else $qtline end), inline: false}
+          ],
+          footer: {text: "fednet pihole-stats-digest"}
+        } + (if $iso != "" then {timestamp: $iso} else {} end))
+      ]
+    }
     ')
 
-  payload=$(jq -n --arg m "$msg" '{content: $m, text: $m}')
   if curl -fsS -X POST -H 'Content-Type: application/json' \
     -d "$payload" "$WEBHOOK_URL" >/dev/null 2>&1; then
     echo "digest sent"
