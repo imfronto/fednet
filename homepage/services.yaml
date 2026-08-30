@@ -53,6 +53,11 @@
         server: fednet
         container: prometheus
         showStats: true
+    - Honeypot Activity:
+        href: http://lab.lan:3000/d/fednet-honeypot/honeypot
+        ping: lab.lan
+        description: Grafana view of honeypot probes
+        icon: mdi-shield-alert-outline
 - 3D Printing:
     - BambuBuddy:
         href: http://lab.lan:8000
