@@ -8,6 +8,14 @@
       dateStyle: long
       timeStyle: short
 
+- openmeteo:
+    label: Holland, MI
+    latitude: 42.7875
+    longitude: -86.1089
+    timezone: America/Detroit
+    units: imperial
+    cache: 5
+
 - resources:
     cpu: true
     memory: true
