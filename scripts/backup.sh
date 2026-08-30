@@ -9,6 +9,32 @@ set +a
 : "${BACKUP_RESTIC_REPOSITORY:?set BACKUP_RESTIC_REPOSITORY in .env}"
 : "${BACKUP_RESTIC_PASSWORD:?set BACKUP_RESTIC_PASSWORD in .env}"
 
+# Reuses gravity-watchdog's webhook by default so one Discord/Slack
+# incoming webhook covers both alerts; set BACKUP_WEBHOOK_URL in .env to
+# point backup failures somewhere else instead.
+BACKUP_WEBHOOK_URL="${BACKUP_WEBHOOK_URL:-${GRAVITY_WEBHOOK_URL:-changeme}}"
+
+send_alert() {
+  [ -n "$BACKUP_WEBHOOK_URL" ] && [ "$BACKUP_WEBHOOK_URL" != "changeme" ] || return 0
+  msg="$1"
+  curl -fsS -X POST -H 'Content-Type: application/json' \
+    -d "{\"text\":\"$msg\",\"content\":\"$msg\"}" "$BACKUP_WEBHOOK_URL" >/dev/null 2>&1 || true
+}
+
+STACK_DOWN=0
+cleanup() {
+  status=$?
+  if [ "$STACK_DOWN" -eq 1 ]; then
+    echo "==> Restarting stack"
+    make up
+  fi
+  if [ "$status" -ne 0 ]; then
+    send_alert "fednet backup FAILED (exit $status) on $(hostname) at $(date -Iseconds) — check /home/fronto/backups/fednet-backup.log"
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+
 # restic runs inside a container (as root) rather than on the host, for
 # two reasons: several services (Caddy, Portainer) don't drop privileges,
 # so their data under ./data is root-owned and unreadable by a host-user
@@ -47,7 +73,7 @@ restic snapshots >/dev/null 2>&1 || {
 
 echo "==> Stopping stack for a consistent snapshot"
 make down
-trap 'echo "==> Restarting stack"; make up' EXIT
+STACK_DOWN=1
 
 # Pi-hole's gravity.db, Grafana/Uptime Kuma's SQLite files, and
 # Prometheus's TSDB all risk a corrupt copy if read mid-write, so the
@@ -55,9 +81,9 @@ trap 'echo "==> Restarting stack"; make up' EXIT
 echo "==> Backing up data/, .env, and the Grafana/Prometheus volumes"
 restic backup /backup/data /backup/env /backup/volumes --tag fednet --host fednet
 
-trap - EXIT
 echo "==> Restarting stack"
 make up
+STACK_DOWN=0
 
 echo "==> Applying retention policy (daily=${BACKUP_KEEP_DAILY:-7} weekly=${BACKUP_KEEP_WEEKLY:-4} monthly=${BACKUP_KEEP_MONTHLY:-6})"
 restic forget \
