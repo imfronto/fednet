@@ -34,6 +34,36 @@ To actually get ad-blocking, point your router's DHCP DNS setting (or each
 device individually) at this server's LAN IP — Pi-hole only filters queries
 that are sent to it.
 
+Pi-hole's blocklists (adlists) live inside its own database under
+`data/pihole/`, which is git-ignored — a fresh checkout starts with none
+configured. Currently configured, all from
+[blocklistproject/Lists](https://github.com/blocklistproject/Lists) plus
+StevenBlack's hosts file:
+
+- `https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts`
+- `https://blocklistproject.github.io/Lists/ads.txt`
+- `https://blocklistproject.github.io/Lists/tracking.txt`
+- `https://blocklistproject.github.io/Lists/malware.txt`
+- `https://blocklistproject.github.io/Lists/phishing.txt`
+- `https://blocklistproject.github.io/Lists/ransomware.txt`
+- `https://blocklistproject.github.io/Lists/scam.txt`
+- `https://blocklistproject.github.io/Lists/fraud.txt`
+- `https://blocklistproject.github.io/Lists/redirect.txt`
+
+Add via the admin UI (Domains &gt; Adlists) or the API:
+
+```bash
+curl -X POST "http://<host>:8081/api/lists?type=block" \
+  -H "sid: $SID" -H "Content-Type: application/json" \
+  -d '{"address":"<list-url>","comment":"..."}'
+# then: docker exec pihole pihole -g
+```
+
+blocklistproject also publishes lists that block entire platforms outright
+(facebook.txt, youtube.txt, tiktok.txt, twitter.txt, whatsapp.txt, gambling,
+porn, crypto, vaping, drugs, fortnite) — deliberately not added above since
+they break those apps/sites entirely rather than just stripping ads.
+
 `gravity-watchdog` alerts if Pi-hole's blocklist (`gravity.db`) hasn't
 refreshed in `GRAVITY_MAX_AGE_HOURS` (default 48h), posting to
 `GRAVITY_WEBHOOK_URL` — still the placeholder `changeme`, so alerts currently
