@@ -1,21 +1,32 @@
 - Infrastructure:
     - Portainer:
-        href: http://fednet:9000
+        href: http://lab.lan:9000
+        ping: lab.lan
         description: Container management
         icon: portainer.png
     - Uptime Kuma:
-        href: http://fednet:3001
+        href: http://lab.lan:3001
+        ping: lab.lan
         description: Service monitoring
         icon: uptime-kuma.png
     - Pi-hole:
-        href: http://fednet:8081/admin
+        href: http://lab.lan:8081/admin
+        ping: lab.lan
         description: Network-wide ad blocking
         icon: pi-hole.png
     - Grafana:
-        href: http://fednet:3000
+        href: http://lab.lan:3000
+        ping: lab.lan
         description: Dashboards
         icon: grafana.png
     - Prometheus:
-        href: http://fednet:9090
+        href: http://lab.lan:9090
+        ping: lab.lan
         description: Metrics
         icon: prometheus.png
+- 3D Printing:
+    - BambuBuddy:
+        href: http://lab.lan:8000
+        ping: lab.lan
+        description: Bambu Lab printer dashboard
+        icon: si-bambulab.png

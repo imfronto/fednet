@@ -1,7 +1,18 @@
+- greeting:
+    text_size: xl
+    text: "fednet"
+
+- datetime:
+    text_size: lg
+    format:
+      dateStyle: long
+      timeStyle: short
+
 - resources:
     cpu: true
     memory: true
     disk: /
+
 - search:
     provider: duckduckgo
     target: _blank

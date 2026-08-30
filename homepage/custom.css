@@ -1,0 +1,51 @@
+html {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(168, 85, 247, 0.10), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08), transparent 50%),
+    linear-gradient(180deg, #05070d 0%, #090c14 100%);
+  background-attachment: fixed;
+}
+
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
+  z-index: 0;
+}
+
+#information-widgets,
+#services {
+  position: relative;
+  z-index: 1;
+}
+
+.services-group > div:first-child {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+a[href] > .relative.flex.items-center {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  border: 1px solid transparent;
+}
+
+a[href]:hover > .relative.flex.items-center {
+  transform: translateY(-2px);
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+
+#greeting {
+  background: linear-gradient(90deg, #e2e8f0, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

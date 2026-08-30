@@ -1,7 +1,24 @@
 title: fednet
 theme: dark
+color: slate
 headerStyle: boxed
+cardBlur: lg
+statusStyle: dot
+hideVersion: true
+disableCollapse: true
+
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: false
+  showSearchSuggestions: true
+  hideVisitURL: false
+
 layout:
   Infrastructure:
     style: row
-    columns: 3
+    columns: 5
+    icon: mdi-server-network
+  3D Printing:
+    style: row
+    columns: 5
+    icon: mdi-printer-3d
