@@ -471,6 +471,36 @@ ongoing burst more than once every 5 minutes. Tunable via
 `HONEYPOT_BURST_THRESHOLD` / `HONEYPOT_BURST_WINDOW_SECONDS` /
 `HONEYPOT_BURST_COOLDOWN_SECONDS` in `.env` — see `.env.example`.
 
+**Why every source IP shows as `172.20.0.1`** — anything reaching the
+honeypot's published ports *from this same Docker host* (another
+container, or the host itself) gets NAT'd to `honeypot_net`'s gateway
+address before OpenCanary ever sees it — standard Docker hairpin NAT,
+not a bug: the reply needs a routable path back, and `honeypot_net` has
+no route to the source's real network. Verified this directly — a test
+container on the `edge` network (the same position Uptime Kuma's own
+monitors sit in) showed up as `172.20.0.1`, identical to every manual
+test run from the host itself. A genuine external device on the LAN
+connects through the host's real network interface instead, a
+different path that preserves the real source IP — that part follows
+from how Docker's NAT works, though it wasn't independently verified
+with a real external device in the session that built this.
+
+Practically, this means anything else on this same host that ever
+touches the honeypot's ports — intentionally, like a health check, or
+not — is indistinguishable from a real prober by IP alone.
+`ip.ignorelist` in `honeypot/opencanary.conf` currently has
+`172.20.0.1` in it for exactly one reason: an Uptime Kuma monitor was
+found actively checking the honeypot, which meant every check cycle
+fired a false-positive Discord alert. Ignorelisting suppresses
+*logging and alerting* only — OpenCanary still answers those
+connections completely normally (verified: full FTP banner/prompt/deny
+sequence, unchanged), so the monitor itself keeps working. The
+tradeoff: this also silences any other host-local source hitting the
+honeypot, not just that one monitor specifically, since they're not
+distinguishable from each other. If you add more local health checks
+against honeypot ports later, they'll land in this same blind spot —
+worth remembering before assuming a quiet honeypot means a quiet LAN.
+
 ## DNS flood detection
 
 `pihole-flood-watchdog` polls Prometheus (which already scrapes
