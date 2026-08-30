@@ -1,6 +1,8 @@
 networks:
   edge:
     external: true
+  pihole_default:
+    external: true
 
 services:
   pihole:
@@ -20,3 +22,14 @@ services:
       - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
     cap_add:
       - NET_ADMIN
+
+  pihole-exporter:
+    image: ghcr.io/mosher-labs/pihole6-exporter:latest
+    container_name: pihole-exporter
+    restart: unless-stopped
+    networks: [edge, pihole_default]
+    command: ["-H", "pihole", "--pihole-port", "80", "--protocol", "http"]
+    environment:
+      - PIHOLE_API_TOKEN=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+    depends_on:
+      - pihole

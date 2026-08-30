@@ -2,3 +2,4 @@
 [2026-08-30T02:13:49.433Z] error: Host validation failed for: localhost. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
 [2026-08-30T02:13:57.166Z] error: Host validation failed for: localhost. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
 [2026-08-30T02:13:57.349Z] error: Host validation failed for: homepage:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-08-30T02:27:05.134Z] error: Host validation failed for: 192.168.1.112. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
