@@ -6,23 +6,43 @@
   <img alt="stack" src="https://img.shields.io/badge/stack-docker%20compose-2496ED?logo=docker&logoColor=white">
   <img alt="dns" src="https://img.shields.io/badge/dns-pi--hole-96060C?logo=pi-hole&logoColor=white">
   <img alt="access" src="https://img.shields.io/badge/access-tailscale%20%7C%20LAN-4B4B4B?logo=tailscale&logoColor=white">
+  <img alt="backups" src="https://img.shields.io/badge/backups-restic-2F5D50?logo=backblaze&logoColor=white">
   <img alt="status" src="https://img.shields.io/badge/status-personal%20project-informational">
 </p>
 
 # fednet
 
-A Docker Compose homelab stack: a reverse-proxied dashboard, network-wide ad
-blocking, container management, metrics/monitoring, and a 3D-printer control
-panel — all self-hosted on one box, reachable either over Tailscale or a
-plain LAN hostname.
+A Docker Compose homelab stack: a reverse-proxied dashboard with live
+service widgets, network-wide ad blocking, container management,
+metrics/monitoring, encrypted backups, and a 3D-printer control panel —
+all self-hosted on one box, reachable either over Tailscale or a plain LAN
+hostname.
 
 Nothing here is exposed to the public internet. Every service binds to the
 host's LAN interface (or a Tailscale tailnet, if you set one up); there's no
 port-forwarding, no cloud dependency, and no external accounts required to
 run it.
 
+## Features
+
+- **One dashboard, live data** — Homepage shows real-time container
+  CPU/mem/status, Pi-hole's blocked-today count, Portainer's running
+  container count, and Uptime Kuma's up/down summary, right on each
+  service's card — no need to click through to check anything
+- **DNS-level ad blocking** for the whole LAN via Pi-hole, with curated
+  blocklists and a watchdog that alerts if they go stale
+- **Encrypted, automated backups** — restic snapshots everything that
+  isn't already in git (service data, secrets, external volumes) on a
+  schedule, with retention policy and failure alerting built in
+- **Zero-touch service discovery** — add a new `services/*.yml` file and
+  `make up` picks it up automatically, no other file to edit
+- **Reachable your way** — a local `lab.lan` hostname via Pi-hole's own
+  DNS, or a Tailscale tailnet for access from anywhere, your choice (or
+  both)
+
 ## Table of contents
 
+- [Features](#features)
 - [Stack overview](#stack-overview)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
@@ -90,11 +110,15 @@ flowchart LR
 
 ## Setup
 
+<p align="center">
+  <img src="docs/install-flow.svg" alt="fednet installation flow: clone, setup, configure, launch, connect" width="100%">
+</p>
+
 ### 1. Clone and run one-time host setup
 
 ```bash
-git clone https://github.com/imfronto/homelab.git
-cd homelab
+git clone https://github.com/imfronto/fednet.git
+cd fednet
 ./scripts/setup.sh
 ```
 
@@ -112,14 +136,17 @@ Then edit `.env`:
 
 | Variable | Required | Notes |
 |---|---|---|
-| `TZ` | recommended | Your timezone, e.g. `America/New_York` |
+| `TZ` | recommended | Your timezone, e.g. `America/Detroit` |
 | `PUID` / `PGID` | recommended | Match your host user so bind-mounted files aren't root-owned |
+| `DOCKER_GID` | recommended | GID of the host's `docker` group (`getent group docker \| cut -d: -f3`) — lets Homepage's container-stats widget read the Docker socket |
 | `TAILSCALE_HOSTNAME` | if using Tailscale | Your tailnet MagicDNS name, e.g. `fednet` |
-| `PIHOLE_PASSWORD` | **yes** | Pi-hole admin password — no default, container won't start without it |
+| `PIHOLE_PASSWORD` | **yes** | Pi-hole admin password — no default, container won't start without it. Also powers Homepage's Pi-hole widget |
 | `GRAFANA_ADMIN_PASSWORD` | **yes** | Grafana admin password — see the [Troubleshooting](#troubleshooting) note if you're changing it on an existing volume |
-| `GRAVITY_WEBHOOK_URL` | optional | Discord/Slack incoming webhook for blocklist-staleness alerts; leave as `changeme` to disable alerting |
+| `GRAVITY_WEBHOOK_URL` | optional | Discord/Slack incoming webhook for blocklist-staleness *and* backup-failure alerts; leave as `changeme` to disable alerting |
 | `GRAVITY_MAX_AGE_HOURS` | optional | Alert threshold if Pi-hole's blocklist hasn't refreshed (default `48`) |
 | `BAMBUDDY_PORT` | optional | Port BambuBuddy's web UI listens on (default `8000`) |
+| `PORTAINER_API_KEY` | optional | Powers Homepage's Portainer widget (running/stopped container counts). Generate under Portainer's **My Account → Access Tokens** |
+| `BACKUP_RESTIC_*` | **yes**, for backups | See [Backups](#backups) |
 
 ### 3. Start the stack
 
@@ -223,14 +250,36 @@ changes without a container restart:
 
 - `homepage/services.yaml` — shortcuts, grouped, each with an optional
   `ping:` host for a live status dot (hostname/IP only — ICMP has no
-  concept of ports, so `host:port` silently fails to parse)
+  concept of ports, so `host:port` silently fails to parse), a `container:`
+  field for live Docker stats, and a `widget:` block for service-specific
+  live data
 - `homepage/settings.yaml` — theme, accent color, header style, card blur,
   group layout/columns
-- `homepage/widgets.yaml` — the info-widget row (greeting, clock, resource
-  usage, search bar)
+- `homepage/widgets.yaml` — the info-widget row (greeting, clock, weather,
+  resource usage, search bar)
+- `homepage/docker.yaml` — the Docker socket connection (`fednet:`) that
+  every service's `container:` field references for live stats
 - `homepage/custom.css` — the dark gradient background, grid texture, and
   card hover effects layered on top of the theme; auto-included by Homepage,
   no build step
+
+**Live widgets** — Portainer, Uptime Kuma, and BambuBuddy's cards show live
+Docker container CPU/memory/status; Pi-hole shows ads blocked today and
+query totals; Portainer additionally shows running/stopped container
+counts; Uptime Kuma shows an up/down/pending summary pulled from a
+[status page](https://github.com/louislam/uptime-kuma) you configure inside
+its own UI (**Status Pages → New Status Page**, then use the slug from its
+URL). The weather widget uses [Open-Meteo](https://open-meteo.com/) — no
+API key needed, just a `latitude`/`longitude` in `widgets.yaml`.
+
+**Widget secrets** — any `key:`/password field in `services.yaml` should
+reference `{{HOMEPAGE_VAR_SOMETHING}}`, never a hardcoded value: Homepage's
+*only* substitution mechanism is that exact `{{HOMEPAGE_VAR_*}}` syntax
+(confirmed from its source — a plain `${VAR}` is never expanded and just
+gets sent as a literal string, which looks like a silent 401). The
+corresponding `HOMEPAGE_VAR_SOMETHING` environment variable is set on the
+`homepage` service in `docker-compose.yml`, sourced from `.env` — so the
+actual secret only ever lives in `.env`, never in a file git tracks.
 
 ## Adding a new service
 
@@ -278,6 +327,7 @@ copy — configured entirely through `.env`:
 | `BACKUP_RESTIC_REPOSITORY` | Where snapshots go — a local path, `sftp:user@host:/path`, an S3-compatible bucket, or Backblaze B2. **A local path only protects against accidental deletion or corruption, not a dead disk** — point this somewhere off the host once you have a second disk or NAS available. |
 | `BACKUP_RESTIC_PASSWORD` | Encrypts and authenticates the repo. restic cannot recover a lost password and neither can anyone else — keep a copy outside this repo (password manager), or every snapshot becomes unreadable. |
 | `BACKUP_KEEP_DAILY` / `BACKUP_KEEP_WEEKLY` / `BACKUP_KEEP_MONTHLY` | Retention policy applied by `restic forget --prune` after each backup. Defaults: 7 daily, 4 weekly, 6 monthly. |
+| `BACKUP_WEBHOOK_URL` | Optional. Where `backup.sh` alerts on failure. Falls back to `GRAVITY_WEBHOOK_URL` if unset, so one Discord/Slack webhook can cover both gravity-watchdog and backup failures. |
 
 `scripts/backup.sh` runs restic inside the `restic/restic` container
 rather than on the host — two reasons: Caddy and Portainer don't drop
@@ -290,7 +340,9 @@ whole stack (`make down` / `make up`) around the snapshot — Pi-hole's
 `gravity.db`, Grafana and Uptime Kuma's SQLite files, and Prometheus's
 TSDB all risk a corrupt copy if read mid-write, so a few seconds of
 downtime beats a backup that fails to restore. No host install is needed
-beyond Docker itself.
+beyond Docker itself. If anything in the backup fails, the stack is
+guaranteed to come back up regardless, and `BACKUP_WEBHOOK_URL` fires so
+you find out instead of discovering it the next time you need a restore.
 
 **Restore:**
 

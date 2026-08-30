@@ -1,0 +1,77 @@
+<svg width="1280" height="300" viewBox="0 0 1280 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="fednet installation flow: clone, setup, configure, launch, connect">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05070d"/>
+      <stop offset="100%" stop-color="#0b0f1a"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="10%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="95%" cy="80%" r="60%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M 42 0 L 0 0 0 42" fill="none" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+    </pattern>
+    <mask id="gridMask">
+      <radialGradient id="gridFade" cx="50%" cy="50%" r="75%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="90%" stop-color="#000000"/>
+      </radialGradient>
+      <rect width="1280" height="300" fill="url(#gridFade)"/>
+    </mask>
+  </defs>
+
+  <rect width="1280" height="300" fill="url(#bg)"/>
+  <rect width="1280" height="300" fill="url(#glow1)"/>
+  <rect width="1280" height="300" fill="url(#glow2)"/>
+  <rect width="1280" height="300" fill="url(#grid)" mask="url(#gridMask)"/>
+
+  <text x="640" y="46" text-anchor="middle" font-family="Roboto,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="15" letter-spacing="2" fill="#64748b">GETTING STARTED</text>
+
+  <!-- connector line -->
+  <line x1="128" y1="150" x2="1152" y2="150" stroke="#ffffff" stroke-opacity="0.10" stroke-width="2"/>
+
+  <!-- Step 1: Clone -->
+  <g transform="translate(128,150)">
+    <circle r="26" fill="#0b0f1a" stroke="#38bdf8" stroke-width="2"/>
+    <text text-anchor="middle" dy="7" font-family="Roboto,sans-serif" font-size="20" font-weight="700" fill="#38bdf8">1</text>
+    <text text-anchor="middle" y="52" font-family="Roboto,sans-serif" font-size="18" font-weight="700" fill="#e2e8f0">Clone</text>
+    <text text-anchor="middle" y="76" font-family="JetBrains Mono,monospace" font-size="13" fill="#94a3b8">git clone ...</text>
+  </g>
+
+  <!-- Step 2: Setup -->
+  <g transform="translate(384,150)">
+    <circle r="26" fill="#0b0f1a" stroke="#38bdf8" stroke-width="2"/>
+    <text text-anchor="middle" dy="7" font-family="Roboto,sans-serif" font-size="20" font-weight="700" fill="#38bdf8">2</text>
+    <text text-anchor="middle" y="52" font-family="Roboto,sans-serif" font-size="18" font-weight="700" fill="#e2e8f0">Setup</text>
+    <text text-anchor="middle" y="76" font-family="JetBrains Mono,monospace" font-size="13" fill="#94a3b8">./scripts/setup.sh</text>
+  </g>
+
+  <!-- Step 3: Configure -->
+  <g transform="translate(640,150)">
+    <circle r="26" fill="#0b0f1a" stroke="#a855f7" stroke-width="2"/>
+    <text text-anchor="middle" dy="7" font-family="Roboto,sans-serif" font-size="20" font-weight="700" fill="#a855f7">3</text>
+    <text text-anchor="middle" y="52" font-family="Roboto,sans-serif" font-size="18" font-weight="700" fill="#e2e8f0">Configure</text>
+    <text text-anchor="middle" y="76" font-family="JetBrains Mono,monospace" font-size="13" fill="#94a3b8">cp .env.example .env</text>
+  </g>
+
+  <!-- Step 4: Launch -->
+  <g transform="translate(896,150)">
+    <circle r="26" fill="#0b0f1a" stroke="#a855f7" stroke-width="2"/>
+    <text text-anchor="middle" dy="7" font-family="Roboto,sans-serif" font-size="20" font-weight="700" fill="#a855f7">4</text>
+    <text text-anchor="middle" y="52" font-family="Roboto,sans-serif" font-size="18" font-weight="700" fill="#e2e8f0">Launch</text>
+    <text text-anchor="middle" y="76" font-family="JetBrains Mono,monospace" font-size="13" fill="#94a3b8">make up</text>
+  </g>
+
+  <!-- Step 5: Connect (done state) -->
+  <g transform="translate(1152,150)">
+    <circle r="26" fill="#0b0f1a" stroke="#34d399" stroke-width="2"/>
+    <circle r="26" fill="#34d399" fill-opacity="0.12"/>
+    <path d="M -9,0 L -3,7 L 10,-8" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text text-anchor="middle" y="52" font-family="Roboto,sans-serif" font-size="18" font-weight="700" fill="#e2e8f0">Connect</text>
+    <text text-anchor="middle" y="76" font-family="JetBrains Mono,monospace" font-size="13" fill="#94a3b8">http://lab.lan</text>
+  </g>
+</svg>
