@@ -11,3 +11,11 @@
         href: http://fednet:8081/admin
         description: Network-wide ad blocking
         icon: pi-hole.png
+    - Grafana:
+        href: http://fednet:3000
+        description: Dashboards
+        icon: grafana.png
+    - Prometheus:
+        href: http://fednet:9090
+        description: Metrics
+        icon: prometheus.png

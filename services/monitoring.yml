@@ -2,6 +2,12 @@ networks:
   edge:
     external: true
 
+volumes:
+  pihole_grafana_data:
+    external: true
+  pihole_prometheus_data:
+    external: true
+
 services:
   uptime-kuma:
     image: louislam/uptime-kuma:1
@@ -12,3 +18,42 @@ services:
       - "3001:3001"
     volumes:
       - ./data/uptime-kuma:/app/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - pihole_prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+    volumes:
+      - pihole_grafana_data:/var/lib/grafana
+
+  gravity-watchdog:
+    image: alpine:latest
+    container_name: gravity-watchdog
+    restart: unless-stopped
+    networks: [edge]
+    entrypoint: ["/bin/sh", "/gravity_watchdog.sh"]
+    environment:
+      - MAX_AGE_HOURS=${GRAVITY_MAX_AGE_HOURS:-48}
+      - CHECK_INTERVAL_SECONDS=3600
+      - WEBHOOK_URL=${GRAVITY_WEBHOOK_URL:?set GRAVITY_WEBHOOK_URL in .env}
+    volumes:
+      - ./data/pihole/etc-pihole:/etc/pihole:ro
+      - ./scripts/gravity_watchdog.sh:/gravity_watchdog.sh:ro
+    depends_on:
+      - pihole
