@@ -1,0 +1,92 @@
+{
+  "title": "Honeypot",
+  "uid": "fednet-honeypot",
+  "tags": ["fednet", "security"],
+  "timezone": "browser",
+  "editable": true,
+  "style": "dark",
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total probes (24h)",
+      "type": "stat",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"honeypot\"} | json | logtype != \"1001\" [$__range]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Probes by service",
+      "type": "piechart",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (dst_port) (count_over_time({job=\"honeypot\"} | json | logtype != \"1001\" [$__range]))",
+          "refId": "A",
+          "legendFormat": "port {{dst_port}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Probes over time",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (dst_port) (count_over_time({job=\"honeypot\"} | json | logtype != \"1001\" [$__interval]))",
+          "refId": "A",
+          "legendFormat": "port {{dst_port}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "title": "Raw probe log",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 6 },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"honeypot\"} | json | logtype != \"1001\"",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

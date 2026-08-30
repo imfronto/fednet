@@ -1,0 +1,34 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: honeypot
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: honeypot
+          service: fednet-honeypot
+          __path__: /var/log/honeypot/opencanary.log
+    pipeline_stages:
+      # Only job/service above are Loki *labels* (kept low-cardinality on
+      # purpose) — everything from the log itself is parsed for
+      # query-time filtering (`| json`) in Grafana, not turned into more
+      # labels, since src_host/dst_port would create a new stream per
+      # value.
+      - json:
+          expressions:
+            src_host: src_host
+            dst_port: dst_port
+            logtype: logtype
+            utc_time: utc_time
+      - timestamp:
+          source: utc_time
+          format: "2006-01-02 15:04:05.000000"

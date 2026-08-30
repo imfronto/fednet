@@ -238,6 +238,14 @@ printer on your LAN with Developer Mode enabled. Open `http://<host>:8000`
 no config file entry needed. Data (job archives, settings) persists under
 `data/bambuddy/`.
 
+**Loki** — its image runs as uid `10001` rather than root, so `data/loki`
+has to be owned by that uid or it fails on startup with `permission
+denied` creating its own subdirectories. `scripts/setup.sh` handles this
+with a throwaway root container (same no-sudo-needed trick used
+elsewhere in this repo) — if you ever recreate `data/loki` by hand,
+re-run that chown: `docker run --rm -v $(pwd)/data/loki:/data alpine
+chown -R 10001:10001 /data`.
+
 **Grafana / Prometheus** — reuse the pre-existing `pihole_grafana_data` and
 `pihole_prometheus_data` Docker volumes (declared `external: true` in
 `services/monitoring.yml`), so dashboards and metric history survive
@@ -391,6 +399,15 @@ couldn't pivot to anything real.
 IP, protocol, and whatever was captured (e.g. attempted credentials) —
 to `HONEYPOT_WEBHOOK_URL`, falling back to `GRAVITY_WEBHOOK_URL` like
 `backup.sh` does, so one webhook can cover all three alert sources.
+
+**Dashboard** — Promtail ships the same log into Loki (both added to
+`services/monitoring.yml`, reusing the Grafana/Prometheus already in the
+stack rather than standing up a separate log viewer), and Grafana
+auto-loads a provisioned **Honeypot** dashboard on startup — no manual
+setup. It shows total probes, a breakdown by port, a probes-over-time
+chart, and the raw log itself, filterable and searchable. Open Grafana
+→ Dashboards → **Honeypot**. Neither Loki nor Promtail publish any port
+to the LAN; Grafana reaches Loki over the `edge` network only.
 
 **A note on `internal: true`** — the first version of this used
 `internal: true` on `honeypot_net` for stronger isolation (no egress at
