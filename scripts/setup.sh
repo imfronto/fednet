@@ -16,3 +16,5 @@ mkdir -p data/caddy/data data/caddy/config data/portainer data/uptime-kuma \
   data/pihole/etc-pihole data/pihole/etc-dnsmasq.d
 
 echo "Setup done. Copy .env.example to .env, then run 'make up'."
+echo "See README 'Backups' before relying on this — restic needs"
+echo "BACKUP_RESTIC_REPOSITORY and BACKUP_RESTIC_PASSWORD set in .env."

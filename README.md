@@ -35,6 +35,7 @@ run it.
 - [Dashboard customization](#dashboard-customization)
 - [Adding a new service](#adding-a-new-service)
 - [Commands](#commands)
+- [Backups](#backups)
 - [Troubleshooting](#troubleshooting)
 - [Data & persistence](#data--persistence)
 
@@ -251,6 +252,68 @@ changes without a container restart:
 | `make ps` | Show container status |
 | `make logs` | Tail logs for all containers |
 | `make pull` | Pull latest images |
+| `make backup` | Snapshot everything git doesn't track (see [Backups](#backups)) |
+| `make backup-list` | List existing snapshots |
+| `make restore` | Restore the latest snapshot (`make restore SNAPSHOT=<id>` for a specific one) |
+
+## Backups
+
+`make backup` uses [restic](https://restic.net/) to snapshot everything
+`.gitignore` excludes from version control — the actual state that a `git
+clone` of this repo can't reconstruct:
+
+- `./data/` — Caddy TLS state, Portainer, Uptime Kuma, Pi-hole's
+  `etc-pihole`/`etc-dnsmasq.d`, BambuBuddy's job archives
+- `.env` — every service password and config value
+- the two external Docker volumes (`pihole_grafana_data`,
+  `pihole_prometheus_data`) that Grafana and Prometheus use, since those
+  live outside `./data` entirely
+
+restic encrypts everything client-side before it leaves the host, dedupes
+across runs, and keeps a history of snapshots rather than just the latest
+copy — configured entirely through `.env`:
+
+| Variable | Notes |
+|---|---|
+| `BACKUP_RESTIC_REPOSITORY` | Where snapshots go — a local path, `sftp:user@host:/path`, an S3-compatible bucket, or Backblaze B2. **A local path only protects against accidental deletion or corruption, not a dead disk** — point this somewhere off the host once you have a second disk or NAS available. |
+| `BACKUP_RESTIC_PASSWORD` | Encrypts and authenticates the repo. restic cannot recover a lost password and neither can anyone else — keep a copy outside this repo (password manager), or every snapshot becomes unreadable. |
+| `BACKUP_KEEP_DAILY` / `BACKUP_KEEP_WEEKLY` / `BACKUP_KEEP_MONTHLY` | Retention policy applied by `restic forget --prune` after each backup. Defaults: 7 daily, 4 weekly, 6 monthly. |
+
+`scripts/backup.sh` runs restic inside the `restic/restic` container
+rather than on the host — two reasons: Caddy and Portainer don't drop
+privileges, so parts of `./data` are root-owned and unreadable by a
+host-user restic; and mounting everything at fixed container-internal
+paths (`/backup/data`, `/backup/env`, `/backup/volumes/...`) keeps
+snapshot contents independent of this host's absolute paths, so restoring
+isn't tied to this exact machine or directory. It also briefly stops the
+whole stack (`make down` / `make up`) around the snapshot — Pi-hole's
+`gravity.db`, Grafana and Uptime Kuma's SQLite files, and Prometheus's
+TSDB all risk a corrupt copy if read mid-write, so a few seconds of
+downtime beats a backup that fails to restore. No host install is needed
+beyond Docker itself.
+
+**Restore:**
+
+```bash
+make backup-list                  # find the snapshot id you want, or use "latest"
+make restore                      # restores the latest snapshot in place
+make restore SNAPSHOT=a1b2c3d4    # or a specific one
+```
+
+`make restore` stops the stack, restores `./data`, `.env`, and the two
+Docker volumes from the snapshot, and brings the stack back up. Because
+the snapshot's paths are container-internal, this works the same way
+whether you're restoring in place after a bad config change or onto a
+freshly cloned repo after losing the disk — just `git clone`, run
+`./scripts/setup.sh`, put `.env` back (or leave the placeholder — restore
+overwrites it from the snapshot anyway), and run `make restore`.
+
+**Automate it** with a nightly cron job:
+
+```bash
+crontab -e
+# 0 3 * * * cd /home/fronto/projects/homelab && ./scripts/backup.sh >> /home/fronto/backups/fednet-backup.log 2>&1
+```
 
 ## Troubleshooting
 
