@@ -4,29 +4,61 @@
         ping: lab.lan
         description: Container management
         icon: portainer.png
+        server: fednet
+        container: portainer
+        showStats: true
+        widget:
+          type: portainer
+          url: http://portainer:9000
+          env: 3
+          key: "{{HOMEPAGE_VAR_PORTAINER_KEY}}"
     - Uptime Kuma:
         href: http://lab.lan:3001
         ping: lab.lan
         description: Service monitoring
         icon: uptime-kuma.png
+        server: fednet
+        container: uptime-kuma
+        showStats: true
+        widget:
+          type: uptimekuma
+          url: http://uptime-kuma:3001
+          slug: uptime
     - Pi-hole:
         href: http://lab.lan:8081/admin
         ping: lab.lan
         description: Network-wide ad blocking
         icon: pi-hole.png
+        server: fednet
+        container: pihole
+        showStats: true
+        widget:
+          type: pihole
+          url: http://pihole:80
+          version: 6
+          key: "{{HOMEPAGE_VAR_PIHOLE_KEY}}"
     - Grafana:
         href: http://lab.lan:3000
         ping: lab.lan
         description: Dashboards
         icon: grafana.png
+        server: fednet
+        container: grafana
+        showStats: true
     - Prometheus:
         href: http://lab.lan:9090
         ping: lab.lan
         description: Metrics
         icon: prometheus.png
+        server: fednet
+        container: prometheus
+        showStats: true
 - 3D Printing:
     - BambuBuddy:
         href: http://lab.lan:8000
         ping: lab.lan
         description: Bambu Lab printer dashboard
         icon: si-bambulab.png
+        server: fednet
+        container: bambuddy
+        showStats: true

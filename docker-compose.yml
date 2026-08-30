@@ -23,9 +23,22 @@ services:
     networks: [edge]
     environment:
       - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
+      # Homepage's entrypoint uses `su-exec uid:gid`, which drops
+      # supplementary groups on the switch — group_add alone doesn't
+      # survive it. Making the docker group homepage's *primary* group
+      # is what actually gets it read access to docker.sock; the process
+      # still runs as PUID so /app/config ownership is unaffected.
+      - PGID=${DOCKER_GID:-999}
       - TZ=${TZ:-UTC}
       - HOMEPAGE_ALLOWED_HOSTS=localhost,homepage:3000,fednet,fednet:80,lab.lan,lab.lan:80,${TAILSCALE_HOSTNAME:-fednet}
+      # Widget credentials, referenced from services.yaml as
+      # {{HOMEPAGE_VAR_...}} so nothing secret ends up in the tracked
+      # YAML — only .env does. Homepage only substitutes vars with this
+      # exact prefix (see substituteEnvironmentVars in its source); a
+      # plain ${VAR} in the YAML is never expanded and gets sent as a
+      # literal string, which just looks like a silent 401.
+      - HOMEPAGE_VAR_PIHOLE_KEY=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+      - HOMEPAGE_VAR_PORTAINER_KEY=${PORTAINER_API_KEY:-}
     volumes:
       - ./homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
