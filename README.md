@@ -53,6 +53,7 @@ run it.
   - [4. Give it a hostname](#4-give-it-a-hostname)
 - [Service notes](#service-notes)
 - [Dashboard customization](#dashboard-customization)
+- [Theming](#theming)
 - [Adding a new service](#adding-a-new-service)
 - [Commands](#commands)
 - [Backups](#backups)
@@ -292,6 +293,54 @@ gets sent as a literal string, which looks like a silent 401). The
 corresponding `HOMEPAGE_VAR_SOMETHING` environment variable is set on the
 `homepage` service in `docker-compose.yml`, sourced from `.env` — so the
 actual secret only ever lives in `.env`, never in a file git tracks.
+
+## Theming
+
+Homepage's dark-slate/glass aesthetic (`homepage/custom.css`) is
+carried into Grafana and Uptime Kuma's status page too, so the whole
+stack reads as one thing rather than several default-styled tools
+parked behind a dashboard.
+
+**Grafana** — `grafana/custom.css` layers the gradient background and a
+glass treatment onto panels (`[class*="-panel-container"]`) on top of
+Grafana's own dark theme. Auto-applied via `grafana/theme-entrypoint.sh`,
+which patches Grafana's vendored `index.html` to link the stylesheet at
+container start (idempotent — checks for a marker before patching, so
+restarts don't double-patch).
+
+This is **not** an officially supported mechanism — Grafana OSS has no
+custom-CSS hook (that's an Enterprise feature), so this is the
+well-known community workaround of patching the template directly. Two
+things fall out of that:
+
+- It can break on a Grafana image upgrade, since it depends on
+  `index.html`'s exact internal structure staying compatible with the
+  patch. If Grafana looks unstyled or broken after a `make pull`, check
+  `docker logs grafana` for the patch step and `grafana/custom.css`
+  against the new version's DOM (panel class names specifically —
+  they're hashed per-build, e.g. `css-iwhfbi-panel-container`, but this
+  build kept a stable `-panel-container` suffix across the hash that the
+  CSS targets instead of the full name).
+- The patch needs to run as root (`index.html` isn't writable by
+  Grafana's normal non-root user), so the container starts as root and
+  `theme-entrypoint.sh` drops to Grafana's own uid via `su` before
+  starting the actual server — it does **not** run as root long-term.
+- Grafana caches static files in memory rather than re-reading per
+  request, so editing `grafana/custom.css` needs `docker restart
+  grafana` to take effect, not just a page refresh.
+- The left nav and top breadcrumb bar are left unstyled — their real
+  class names weren't reachable through the same stable-suffix pattern
+  the panels use, and guessing blind wasn't worth the risk of subtly
+  breaking Grafana's own layout. Grafana's default dark chrome already
+  reads fine next to the themed panels in practice.
+
+**Uptime Kuma** — its status page has an *actual* supported Custom CSS
+field (Settings gear on the status page → Custom CSS), so no hack is
+needed there. `uptime-kuma/status-page-custom.css` has the fednet
+version, kept in the repo as a reference since Uptime Kuma stores it in
+its own database, not a file this repo controls. This one's a manual
+step, not automated: open the status page, edit it, set **Theme** to
+**Dark**, paste the contents of that file into **Custom CSS**, save.
 
 ## Adding a new service
 

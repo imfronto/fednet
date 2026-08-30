@@ -1,0 +1,41 @@
+/* fednet theme overrides for Grafana OSS.
+   Grafana's panel-level styling uses Emotion CSS-in-JS with a hashed
+   class prefix that changes per build (e.g. css-iwhfbi-panel-container),
+   but keeps a stable semantic suffix — targeted here via [class*=] on
+   that suffix rather than the full hashed name, so this survives image
+   updates better than pinning exact class names would. Injected as the
+   last stylesheet in <head> (see theme-entrypoint.sh), so it loads after
+   Grafana's own theme CSS and doesn't need !important for most rules —
+   used sparingly, only where Grafana sets the property inline or with
+   higher specificity. */
+
+body {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(168, 85, 247, 0.1), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08), transparent 50%),
+    linear-gradient(180deg, #05070d 0%, #090c14 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Panels are already transparent (the body gradient already shows
+   through), so this just adds the glass-card treatment: a soft fill,
+   blur, and a slightly brighter border than Grafana's default. */
+[class*="-panel-container"] {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+[class*="-panel-container"]:hover {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* Left nav and top breadcrumb bar are deliberately left untouched —
+   their real class names/DOM structure weren't findable via stable
+   selectors (Emotion-generated, and this build didn't expose them
+   through the same [class*="-name"] pattern the panels use). Grafana's
+   own default dark styling already reads fine next to the themed
+   panels, verified visually, so this stops short rather than guess. */

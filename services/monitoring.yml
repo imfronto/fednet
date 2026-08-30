@@ -39,9 +39,16 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+    # Root only to let theme-entrypoint.sh patch index.html at startup;
+    # it drops to grafana's normal uid (472) via su before running the
+    # actual server.
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/theme-entrypoint.sh"]
     volumes:
       - pihole_grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/theme-entrypoint.sh:/theme-entrypoint.sh:ro
+      - ./grafana/custom.css:/usr/share/grafana/public/fednet-custom.css:ro
 
   loki:
     image: grafana/loki:latest

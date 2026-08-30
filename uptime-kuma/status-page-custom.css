@@ -1,0 +1,34 @@
+/* fednet theme for the Uptime Kuma status page.
+   Paste into: edit the status page -> gear icon -> Custom CSS.
+   Also set the status page's Theme dropdown to "Dark" first — this
+   builds on Uptime Kuma's own dark palette rather than replacing it,
+   same approach used for Grafana's theming. */
+
+body {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(168, 85, 247, 0.1), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08), transparent 50%),
+    linear-gradient(180deg, #05070d 0%, #090c14 100%) !important;
+  background-attachment: fixed !important;
+}
+
+.shadow-box {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+/* Status/uptime badges keep their semantic colors (green/red/yellow —
+   don't touch bg-*), just softened corners/weight to match Homepage's
+   pill style instead of Bootstrap's default look. */
+.badge {
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+}
+
+a {
+  color: #38bdf8;
+}
