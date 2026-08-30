@@ -56,6 +56,7 @@ run it.
 - [Adding a new service](#adding-a-new-service)
 - [Commands](#commands)
 - [Backups](#backups)
+- [Honeypot](#honeypot)
 - [Troubleshooting](#troubleshooting)
 - [Data & persistence](#data--persistence)
 
@@ -147,6 +148,7 @@ Then edit `.env`:
 | `BAMBUDDY_PORT` | optional | Port BambuBuddy's web UI listens on (default `8000`) |
 | `PORTAINER_API_KEY` | optional | Powers Homepage's Portainer widget (running/stopped container counts). Generate under Portainer's **My Account → Access Tokens** |
 | `BACKUP_RESTIC_*` | **yes**, for backups | See [Backups](#backups) |
+| `HONEYPOT_WEBHOOK_URL` | optional | See [Honeypot](#honeypot) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 
 ### 3. Start the stack
 
@@ -366,6 +368,38 @@ overwrites it from the snapshot anyway), and run `make restore`.
 crontab -e
 # 0 3 * * * cd /home/fronto/projects/homelab && ./scripts/backup.sh >> /home/fronto/backups/fednet-backup.log 2>&1
 ```
+
+## Honeypot
+
+`services/honeypot.yml` runs [OpenCanary](https://github.com/thinkst/opencanary),
+a low-interaction honeypot: it fakes five commonly-scanned services —
+FTP (`21`), Telnet (`23`), MySQL (`3306`), Redis (`6379`), MongoDB
+(`27017`) — and logs every connection, including any credentials
+attempted. Real SSH stays on `:22`, untouched. Nothing legitimate on this
+LAN ever has a reason to touch these ports, so any hit is inherently
+suspicious — a compromised IoT device, a scanning bot that made it onto
+the network, or a malicious guest.
+
+It's deliberately **not** on the shared `edge` network or listed in
+Homepage — it sits on its own dedicated `honeypot_net`, which has no
+route to Pi-hole, Portainer, Grafana, or anything else in this stack
+(verified: it can't even resolve `pihole` by name). If it were ever
+actually compromised beyond OpenCanary's emulation layer, it still
+couldn't pivot to anything real.
+
+`honeypot-watchdog` tails its log and posts a formatted alert — source
+IP, protocol, and whatever was captured (e.g. attempted credentials) —
+to `HONEYPOT_WEBHOOK_URL`, falling back to `GRAVITY_WEBHOOK_URL` like
+`backup.sh` does, so one webhook can cover all three alert sources.
+
+**A note on `internal: true`** — the first version of this used
+`internal: true` on `honeypot_net` for stronger isolation (no egress at
+all). That turned out to also block Docker's own port-publishing, which
+silently made the honeypot completely unreachable from the LAN —
+defeating the entire point without any obvious error. Caught by
+literally testing a connection before calling it done, not by reading
+the port list and assuming it worked. Isolation here comes from *which*
+network it's on, not from `internal: true`.
 
 ## Troubleshooting
 

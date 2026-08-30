@@ -1,0 +1,49 @@
+networks:
+  edge:
+    external: true
+  # Deliberately NOT the shared edge network: Docker only routes between
+  # containers on the *same* network, so honeypot has no path to Pi-hole,
+  # Portainer, Grafana, etc. even if fully compromised. (internal:true
+  # was tried here first and reverted — it also blocks Docker's own
+  # port-publishing, which silently made the honeypot unreachable from
+  # the LAN entirely, defeating the point. Verified with `docker port`
+  # and a direct connection test before catching it.)
+  honeypot_net: {}
+
+services:
+  honeypot:
+    image: thinkst/opencanary:latest
+    container_name: honeypot
+    restart: unless-stopped
+    networks: [honeypot_net]
+    tmpfs:
+      - /run
+    ports:
+      # Classic scan/bot bait — all unused on this host (verified against
+      # `ss -tln` before adding). Real SSH stays on :22, untouched.
+      - "21:21"     # FTP
+      - "23:23"     # Telnet
+      - "3306:3306" # MySQL
+      - "6379:6379" # Redis
+      - "27017:27017" # MongoDB
+    volumes:
+      - ./honeypot/opencanary.conf:/root/.opencanary.conf:ro
+      - ./data/honeypot:/var/tmp
+
+  honeypot-watchdog:
+    image: alpine:latest
+    container_name: honeypot-watchdog
+    restart: unless-stopped
+    networks: [edge]
+    entrypoint: ["/bin/sh", "/honeypot_watchdog.sh"]
+    environment:
+      # Resolved in honeypot_watchdog.sh, not here — Compose's own
+      # interpolation doesn't support nesting a second ${VAR} inside a
+      # :- default the way a real shell does.
+      - HONEYPOT_WEBHOOK_URL=${HONEYPOT_WEBHOOK_URL:-}
+      - GRAVITY_WEBHOOK_URL=${GRAVITY_WEBHOOK_URL:?set GRAVITY_WEBHOOK_URL in .env}
+    volumes:
+      - ./data/honeypot:/data/honeypot:ro
+      - ./scripts/honeypot_watchdog.sh:/honeypot_watchdog.sh:ro
+    depends_on:
+      - honeypot
