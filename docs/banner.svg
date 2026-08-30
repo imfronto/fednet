@@ -1,0 +1,85 @@
+<svg width="1280" height="360" viewBox="0 0 1280 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="fednet homelab banner">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05070d"/>
+      <stop offset="100%" stop-color="#0b0f1a"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="15%" cy="15%" r="55%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="88%" cy="10%" r="60%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow3" cx="50%" cy="110%" r="60%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="titleFade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M 42 0 L 0 0 0 42" fill="none" stroke="#ffffff" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+    <mask id="gridMask">
+      <radialGradient id="gridFade" cx="50%" cy="0%" r="85%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="80%" stop-color="#000000"/>
+      </radialGradient>
+      <rect width="1280" height="360" fill="url(#gridFade)"/>
+    </mask>
+  </defs>
+
+  <rect width="1280" height="360" fill="url(#bg)"/>
+  <rect width="1280" height="360" fill="url(#glow1)"/>
+  <rect width="1280" height="360" fill="url(#glow2)"/>
+  <rect width="1280" height="360" fill="url(#glow3)"/>
+  <rect width="1280" height="360" fill="url(#grid)" mask="url(#gridMask)"/>
+
+  <!-- status dot accent -->
+  <circle cx="96" cy="128" r="6" fill="#34d399"/>
+  <circle cx="96" cy="128" r="12" fill="#34d399" fill-opacity="0.25"/>
+
+  <text x="118" y="140" font-family="'JetBrains Mono','Fira Code',ui-monospace,monospace" font-size="20" fill="#64748b" letter-spacing="2">HOMELAB.STACK</text>
+
+  <text x="94" y="215" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="76" font-weight="700" fill="url(#titleFade)">fednet</text>
+
+  <text x="98" y="256" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="21" fill="#94a3b8">Self-hosted services, DNS-level ad blocking, and monitoring &#8212; on your own hardware.</text>
+
+  <!-- service pills -->
+  <g font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="15" fill="#cbd5e1">
+    <g transform="translate(96,290)">
+      <rect width="82" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="41" y="20" text-anchor="middle">Caddy</text>
+    </g>
+    <g transform="translate(190,290)">
+      <rect width="104" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="52" y="20" text-anchor="middle">Pi-hole</text>
+    </g>
+    <g transform="translate(306,290)">
+      <rect width="110" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="55" y="20" text-anchor="middle">Grafana</text>
+    </g>
+    <g transform="translate(428,290)">
+      <rect width="132" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="66" y="20" text-anchor="middle">Prometheus</text>
+    </g>
+    <g transform="translate(572,290)">
+      <rect width="120" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="60" y="20" text-anchor="middle">Portainer</text>
+    </g>
+    <g transform="translate(704,290)">
+      <rect width="136" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="68" y="20" text-anchor="middle">Uptime Kuma</text>
+    </g>
+    <g transform="translate(852,290)">
+      <rect width="128" height="30" rx="15" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.10"/>
+      <text x="64" y="20" text-anchor="middle">BambuBuddy</text>
+    </g>
+  </g>
+
+  <!-- corner mark -->
+  <text x="1184" y="336" font-family="'JetBrains Mono','Fira Code',ui-monospace,monospace" font-size="14" fill="#475569" text-anchor="end">lab.lan</text>
+</svg>
