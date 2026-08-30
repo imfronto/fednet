@@ -59,6 +59,7 @@ run it.
 - [Backups](#backups)
 - [Honeypot](#honeypot)
 - [DNS flood detection](#dns-flood-detection)
+- [Hourly Pi-hole stats digest](#hourly-pi-hole-stats-digest)
 - [Troubleshooting](#troubleshooting)
 - [Data & persistence](#data--persistence)
 
@@ -152,6 +153,7 @@ Then edit `.env`:
 | `BACKUP_RESTIC_*` | **yes**, for backups | See [Backups](#backups) |
 | `HONEYPOT_WEBHOOK_URL` | optional | See [Honeypot](#honeypot) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 | `PIHOLE_FLOOD_WEBHOOK_URL` | optional | See [DNS flood detection](#dns-flood-detection) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
+| `PIHOLE_STATS_WEBHOOK_URL` | optional | See [Hourly Pi-hole stats digest](#hourly-pi-hole-stats-digest) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 
 ### 3. Start the stack
 
@@ -526,14 +528,37 @@ signals:
   last minute, in case many devices are involved rather than one
   obvious offender.
 
-Both are absolute thresholds (300/min per-client, 2000/min network-wide
+Both are absolute thresholds (600/min per-client, 4000/min network-wide
 by default) rather than adaptive/relative ones — simpler, and good
 enough for a personal homelab, but it means the defaults might not fit
 every household's actual baseline traffic. Tune
 `PIHOLE_CLIENT_FLOOD_THRESHOLD` / `PIHOLE_TOTAL_FLOOD_THRESHOLD` in
 `.env` if you get false positives or negatives. Alerts go to
 `PIHOLE_FLOOD_WEBHOOK_URL`, falling back to `GRAVITY_WEBHOOK_URL` like
-everything else.
+everything else, with a 30-minute cooldown
+(`PIHOLE_FLOOD_COOLDOWN_SECONDS`) between repeat alerts of the same
+kind.
+
+## Hourly Pi-hole stats digest
+
+`pihole-stats-digest` posts a summary to Discord every hour (on the
+hour), independent of the flood alerts above — this one fires on a
+fixed schedule regardless of activity level, rather than only when
+something looks wrong. Each message covers the last hour's:
+
+- total queries and how many were blocked (with percentage)
+- cached vs. forwarded counts
+- top 5 blocked domains and top 5 clients by query volume
+- a query-type breakdown (A, AAAA, HTTPS, PTR, etc.)
+
+It logs into Pi-hole's API with `PIHOLE_PASSWORD`, sums the 10-minute
+buckets from `/api/history` for the last-hour totals (Pi-hole's plain
+summary endpoint is a since-midnight cumulative figure, not a sliding
+window), and uses the `/api/stats/database/*` endpoints — the ones that
+actually honor `from`/`until` — for the top-domains/clients/query-type
+breakdowns. Posts to `PIHOLE_STATS_WEBHOOK_URL`, falling back to
+`GRAVITY_WEBHOOK_URL`. Tune `PIHOLE_STATS_TOP_COUNT` (default 5) and
+`PIHOLE_STATS_INTERVAL_SECONDS` (default 3600) in `.env`.
 
 **On "DDoS" specifically** — this stack has no port-forwarding and
 nothing exposed to the public internet by design, so a classic

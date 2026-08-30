@@ -108,3 +108,20 @@ services:
     depends_on:
       - prometheus
       - pihole-exporter
+
+  pihole-stats-digest:
+    image: alpine:latest
+    container_name: pihole-stats-digest
+    restart: unless-stopped
+    networks: [edge]
+    entrypoint: ["/bin/sh", "/pihole_stats_digest.sh"]
+    environment:
+      - PIHOLE_PASSWORD=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+      - PIHOLE_STATS_WEBHOOK_URL=${PIHOLE_STATS_WEBHOOK_URL:-}
+      - GRAVITY_WEBHOOK_URL=${GRAVITY_WEBHOOK_URL:?set GRAVITY_WEBHOOK_URL in .env}
+      - PIHOLE_STATS_TOP_COUNT=${PIHOLE_STATS_TOP_COUNT:-5}
+      - PIHOLE_STATS_INTERVAL_SECONDS=${PIHOLE_STATS_INTERVAL_SECONDS:-3600}
+    volumes:
+      - ./scripts/pihole_stats_digest.sh:/pihole_stats_digest.sh:ro
+    depends_on:
+      - pihole
