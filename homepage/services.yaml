@@ -1,0 +1,9 @@
+- Infrastructure:
+    - Portainer:
+        href: http://fednet:9000
+        description: Container management
+        icon: portainer.png
+    - Uptime Kuma:
+        href: http://fednet:3001
+        description: Service monitoring
+        icon: uptime-kuma.png

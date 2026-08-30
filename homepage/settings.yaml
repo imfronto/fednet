@@ -1,0 +1,7 @@
+title: fednet
+theme: dark
+headerStyle: boxed
+layout:
+  Infrastructure:
+    style: row
+    columns: 3
