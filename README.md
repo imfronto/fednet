@@ -57,6 +57,7 @@ run it.
 - [Commands](#commands)
 - [Backups](#backups)
 - [Honeypot](#honeypot)
+- [DNS flood detection](#dns-flood-detection)
 - [Troubleshooting](#troubleshooting)
 - [Data & persistence](#data--persistence)
 
@@ -149,6 +150,7 @@ Then edit `.env`:
 | `PORTAINER_API_KEY` | optional | Powers Homepage's Portainer widget (running/stopped container counts). Generate under Portainer's **My Account → Access Tokens** |
 | `BACKUP_RESTIC_*` | **yes**, for backups | See [Backups](#backups) |
 | `HONEYPOT_WEBHOOK_URL` | optional | See [Honeypot](#honeypot) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
+| `PIHOLE_FLOOD_WEBHOOK_URL` | optional | See [DNS flood detection](#dns-flood-detection) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 
 ### 3. Start the stack
 
@@ -408,6 +410,49 @@ setup. It shows total probes, a breakdown by port, a probes-over-time
 chart, and the raw log itself, filterable and searchable. Open Grafana
 → Dashboards → **Honeypot**. Neither Loki nor Promtail publish any port
 to the LAN; Grafana reaches Loki over the `edge` network only.
+
+**Burst detection** — a single probe is normal background noise (any
+port scanner touches all five decoy ports eventually); ten or more
+probes inside 60 seconds is a materially different signal — an active
+scan or attack in progress, not just recon. `honeypot-watchdog` tracks
+a sliding window of recent probe timestamps and fires a separate,
+more urgent alert when the threshold is crossed, on top of (not
+instead of) the normal per-probe alerts. It won't re-fire for the same
+ongoing burst more than once every 5 minutes. Tunable via
+`HONEYPOT_BURST_THRESHOLD` / `HONEYPOT_BURST_WINDOW_SECONDS` /
+`HONEYPOT_BURST_COOLDOWN_SECONDS` in `.env` — see `.env.example`.
+
+## DNS flood detection
+
+`pihole-flood-watchdog` polls Prometheus (which already scrapes
+`pihole-exporter`, no new scraping needed) every 60 seconds for two
+signals:
+
+- **A single LAN device flooding DNS** — Pi-hole's own per-client
+  1-minute query count (`pihole_query_client_1m`). A device suddenly
+  doing 300+ queries/minute is unusual for normal traffic regardless of
+  household size, and is a common real symptom of a compromised or
+  infected device (malware beaconing, DGA domains, or worse).
+- **Network-wide query rate** — total queries across all clients in the
+  last minute, in case many devices are involved rather than one
+  obvious offender.
+
+Both are absolute thresholds (300/min per-client, 2000/min network-wide
+by default) rather than adaptive/relative ones — simpler, and good
+enough for a personal homelab, but it means the defaults might not fit
+every household's actual baseline traffic. Tune
+`PIHOLE_CLIENT_FLOOD_THRESHOLD` / `PIHOLE_TOTAL_FLOOD_THRESHOLD` in
+`.env` if you get false positives or negatives. Alerts go to
+`PIHOLE_FLOOD_WEBHOOK_URL`, falling back to `GRAVITY_WEBHOOK_URL` like
+everything else.
+
+**On "DDoS" specifically** — this stack has no port-forwarding and
+nothing exposed to the public internet by design, so a classic
+internet-sourced volumetric DDoS doesn't really apply here. What *is*
+realistic and worth detecting on a private LAN is a flood originating
+from something local — a compromised device, not a distributed attack
+from outside. That's what both this and the honeypot's burst detection
+actually cover.
 
 **A note on `internal: true`** — the first version of this used
 `internal: true` on `honeypot_net` for stronger isolation (no egress at

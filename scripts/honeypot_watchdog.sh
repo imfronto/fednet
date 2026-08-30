@@ -33,11 +33,47 @@ proto_name() {
   esac
 }
 
+# Burst detection: many probes fast is a materially different signal than
+# one-off recon (an active scan/attack in progress), so it gets its own
+# escalated alert on top of the per-probe ones below — not instead of
+# them. State is a plain file of recent probe timestamps, pruned to a
+# sliding window on every probe; no persistence needed since a container
+# restart just means "no known recent history," which is correct.
+BURST_THRESHOLD="${HONEYPOT_BURST_THRESHOLD:-10}"
+BURST_WINDOW_SECONDS="${HONEYPOT_BURST_WINDOW_SECONDS:-60}"
+BURST_COOLDOWN_SECONDS="${HONEYPOT_BURST_COOLDOWN_SECONDS:-300}"
+PROBE_TIMES_FILE="/tmp/probe_times"
+LAST_BURST_ALERT_FILE="/tmp/last_burst_alert"
+: > "$PROBE_TIMES_FILE"
+echo 0 > "$LAST_BURST_ALERT_FILE"
+
+check_burst() {
+  now=$(date +%s)
+  echo "$now" >> "$PROBE_TIMES_FILE"
+
+  cutoff=$((now - BURST_WINDOW_SECONDS))
+  : > "${PROBE_TIMES_FILE}.tmp"
+  while IFS= read -r t; do
+    [ "$t" -ge "$cutoff" ] 2>/dev/null && echo "$t" >> "${PROBE_TIMES_FILE}.tmp"
+  done < "$PROBE_TIMES_FILE"
+  mv "${PROBE_TIMES_FILE}.tmp" "$PROBE_TIMES_FILE"
+
+  count=$(wc -l < "$PROBE_TIMES_FILE")
+  if [ "$count" -ge "$BURST_THRESHOLD" ]; then
+    last_alert=$(cat "$LAST_BURST_ALERT_FILE")
+    if [ $((now - last_alert)) -ge "$BURST_COOLDOWN_SECONDS" ]; then
+      send_alert "fednet honeypot: BURST - $count probes in the last ${BURST_WINDOW_SECONDS}s (possible active scan/attack, not just recon)"
+      echo "$now" > "$LAST_BURST_ALERT_FILE"
+    fi
+  fi
+}
+
 while [ ! -f "$LOG_FILE" ]; do
   sleep 2
 done
 
 echo "watching $LOG_FILE, alerting to $([ -n "$HONEYPOT_WEBHOOK_URL" ] && echo HONEYPOT_WEBHOOK_URL || echo GRAVITY_WEBHOOK_URL)"
+echo "burst detection: ${BURST_THRESHOLD}+ probes in ${BURST_WINDOW_SECONDS}s (cooldown ${BURST_COOLDOWN_SECONDS}s)"
 
 tail -n0 -F "$LOG_FILE" | while IFS= read -r line; do
   src_host=$(echo "$line" | jq -r '.src_host // "unknown"' 2>/dev/null) || continue
@@ -47,4 +83,5 @@ tail -n0 -F "$LOG_FILE" | while IFS= read -r line; do
 
   msg="fednet honeypot: $proto probe from $src_host - $logdata"
   send_alert "$msg"
+  check_burst
 done
