@@ -1,3 +1,8 @@
 data/
 .env
 homepage/logs/
+# Unused default templates Homepage auto-seeds into the config dir on
+# first boot of any integration it supports but we haven't configured.
+homepage/custom.js
+homepage/docker.yaml
+homepage/proxmox.yaml

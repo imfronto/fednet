@@ -1,0 +1,21 @@
+services:
+  bambuddy:
+    image: ghcr.io/maziggy/bambuddy:latest
+    container_name: bambuddy
+    restart: unless-stopped
+    # Host networking (not the edge bridge network used by every other
+    # service here) — required for SSDP printer auto-discovery and the
+    # RTSP camera proxy, both of which need L2 multicast/raw port access
+    # that a bridge network can't provide.
+    network_mode: host
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      - TZ=${TZ:-UTC}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - PORT=${BAMBUDDY_PORT:-8000}
+    volumes:
+      - ./data/bambuddy/data:/app/data
+      - ./data/bambuddy/logs:/app/logs
+    stop_grace_period: 30s
