@@ -22,6 +22,10 @@ layout:
     style: row
     columns: 5
     icon: mdi-robot-outline
+  Media:
+    style: row
+    columns: 5
+    icon: mdi-movie-open-outline
   3D Printing:
     style: row
     columns: 5

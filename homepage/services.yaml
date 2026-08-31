@@ -67,6 +67,21 @@
         server: fednet
         container: open-webui
         showStats: true
+- Media:
+    - Jellyfin:
+        href: http://lab.lan:8096
+        ping: lab.lan
+        description: Media server
+        icon: jellyfin.png
+        server: fednet
+        container: jellyfin
+        showStats: true
+        widget:
+          type: jellyfin
+          url: http://jellyfin:8096
+          key: "{{HOMEPAGE_VAR_JELLYFIN_KEY}}"
+          enableBlocks: true
+          enableNowPlaying: true
 - 3D Printing:
     - BambuBuddy:
         href: http://lab.lan:8000

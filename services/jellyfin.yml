@@ -1,0 +1,29 @@
+networks:
+  edge:
+    external: true
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "${JELLYFIN_PORT:-8096}:8096"
+    environment:
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./data/jellyfin/config:/config
+      - ./data/jellyfin/cache:/cache
+      # Read-only: Jellyfin only needs to read your library, and this
+      # keeps a metadata-scan bug or bad plugin from being able to touch
+      # the actual files. Drop `:ro` if you want it to save extracted
+      # subtitles/artwork back into the media folders instead of its own
+      # /config/metadata.
+      - ./data/jellyfin/media:/media:ro
+      # No GPU passthrough: this host's CPU (Xeon E5-2407) has no
+      # integrated GPU, so hardware transcoding has nothing to attach to
+      # — every transcode falls back to (slower) software encoding via
+      # ffmpeg. If the host ever gets an Intel/AMD GPU, add
+      # `/dev/dri:/dev/dri` here and enable VAAPI in Jellyfin's
+      # Playback settings.

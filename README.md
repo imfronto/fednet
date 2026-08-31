@@ -57,6 +57,7 @@ run it.
 - [Adding a new service](#adding-a-new-service)
 - [Commands](#commands)
 - [Local AI chat (Ollama + Open WebUI)](#local-ai-chat-ollama--open-webui)
+- [Jellyfin](#jellyfin)
 - [Backups](#backups)
 - [Honeypot](#honeypot)
 - [DNS flood detection](#dns-flood-detection)
@@ -78,6 +79,7 @@ run it.
 | [BambuBuddy](https://github.com/maziggy/bambuddy) | Self-hosted Bambu Lab 3D printer dashboard | `8000` (host networking) |
 | [Ollama](https://ollama.com/) | Local LLM inference server | `11434` |
 | [Open WebUI](https://github.com/open-webui/open-webui) | Browser chat UI for Ollama | `8082` |
+| [Jellyfin](https://jellyfin.org/) | Self-hosted media server | `8096` |
 
 Every service except BambuBuddy sits on a shared external Docker network
 (`edge`) and is published directly on the host's LAN ports — Caddy only
@@ -96,7 +98,7 @@ flowchart LR
 
     Client -- "DNS query" --> Pihole[Pi-hole :53]
     Client -- "http://lab.lan" --> Caddy[Caddy :80]
-    Client -- "direct ports" --> Other[Portainer / Grafana / Prometheus / Uptime Kuma / BambuBuddy / Open WebUI]
+    Client -- "direct ports" --> Other[Portainer / Grafana / Prometheus / Uptime Kuma / BambuBuddy / Open WebUI / Jellyfin]
 
     Pihole -- "lab.lan -> host IP" --> Caddy
     Pihole -- "blocked/allowed" --> Upstream[(Upstream DNS)]
@@ -155,6 +157,8 @@ Then edit `.env`:
 | `PORTAINER_API_KEY` | optional | Powers Homepage's Portainer widget (running/stopped container counts). Generate under Portainer's **My Account → Access Tokens** |
 | `OLLAMA_PORT` / `OPENWEBUI_PORT` | optional | Host ports for Ollama's API and Open WebUI's chat interface (defaults `11434` / `8082`) |
 | `OLLAMA_DEFAULT_MODEL` | optional | Model pulled automatically on first start (default `llama3.2`) — see [Local AI chat](#local-ai-chat-ollama--open-webui) |
+| `JELLYFIN_PORT` | optional | Host port for Jellyfin's web UI (default `8096`) |
+| `JELLYFIN_API_KEY` | optional | Powers Homepage's Jellyfin widget (now-playing, library counts). Generate under Jellyfin's **Dashboard → Advanced → API Keys** |
 | `BACKUP_RESTIC_*` | **yes**, for backups | See [Backups](#backups) |
 | `HONEYPOT_WEBHOOK_URL` | optional | See [Honeypot](#honeypot) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 | `PIHOLE_FLOOD_WEBHOOK_URL` | optional | See [DNS flood detection](#dns-flood-detection) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
@@ -423,6 +427,41 @@ docker exec ollama ollama list
 Open WebUI picks up every model pulled this way automatically — no
 separate configuration on its side.
 
+## Jellyfin
+
+`services/jellyfin.yml` runs [Jellyfin](https://jellyfin.org/) on the
+shared `edge` network like everything else in this stack (not host
+networking, unlike BambuBuddy) — open `http://lab.lan:8096`, run through
+its first-time setup wizard (creates the admin account), and add a
+library pointing at `/media` inside the container. It's also on the
+Homepage dashboard under **Media**.
+
+**Media library** — `./data/jellyfin/media` is a placeholder bind mount,
+read-only, since this host only had its single ~60GB root disk free when
+this was set up — not realistic for an actual media library. Repoint the
+`./data/jellyfin/media:/media:ro` line in `services/jellyfin.yml` at real
+storage (an external drive, NAS mount, etc.) once you have it, then
+`make up` to pick up the change. `./data/jellyfin/config` and
+`./data/jellyfin/cache` hold Jellyfin's own database/metadata and
+transcode cache respectively, and are fine staying on the root disk.
+
+**No hardware transcoding** — this host's CPU (a Xeon E5-2407) has no
+integrated GPU, so there's nothing for Jellyfin's VAAPI/QuickSync path to
+attach to; transcoding falls back to slower software encoding via
+ffmpeg. Direct-playing files your client already supports natively skips
+transcoding entirely and isn't affected by this. If the host ever gets
+an Intel/AMD GPU, add `/dev/dri:/dev/dri` to the `jellyfin` service and
+enable hardware acceleration in Jellyfin's **Dashboard → Playback**
+settings — no other change needed.
+
+**Because bridge networking (not host) was chosen here**, automatic
+DLNA/UPnP discovery by smart TVs and some apps won't find the server on
+its own — enter `http://<host>:8096` manually in each client instead.
+Switch `services/jellyfin.yml` to `network_mode: host` (dropping the
+`ports:`/`networks:` lines, same trade BambuBuddy makes for SSDP) if
+auto-discovery matters more to you than staying consistent with the rest
+of the stack's networking.
+
 ## Backups
 
 `make backup` uses [restic](https://restic.net/) to snapshot everything
@@ -431,7 +470,9 @@ clone` of this repo can't reconstruct:
 
 - `./data/` — Caddy TLS state, Portainer, Uptime Kuma, Pi-hole's
   `etc-pihole`/`etc-dnsmasq.d`, BambuBuddy's job archives, Ollama's pulled
-  models, Open WebUI's accounts and chat history
+  models, Open WebUI's accounts and chat history, Jellyfin's config/cache
+  (not its media library — back that up separately, wherever it actually
+  lives)
 - `.env` — every service password and config value
 - the two external Docker volumes (`pihole_grafana_data`,
   `pihole_prometheus_data`) that Grafana and Prometheus use, since those

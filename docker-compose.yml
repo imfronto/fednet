@@ -39,6 +39,7 @@ services:
       # literal string, which just looks like a silent 401.
       - HOMEPAGE_VAR_PIHOLE_KEY=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
       - HOMEPAGE_VAR_PORTAINER_KEY=${PORTAINER_API_KEY:-}
+      - HOMEPAGE_VAR_JELLYFIN_KEY=${JELLYFIN_API_KEY:-}
     volumes:
       - ./homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro

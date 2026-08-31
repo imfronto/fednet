@@ -14,7 +14,8 @@ docker network inspect edge >/dev/null 2>&1 || docker network create edge
 
 mkdir -p data/caddy/data data/caddy/config data/portainer data/uptime-kuma \
   data/pihole/etc-pihole data/pihole/etc-dnsmasq.d data/honeypot data/loki \
-  data/ollama data/openwebui
+  data/ollama data/openwebui \
+  data/jellyfin/config data/jellyfin/cache data/jellyfin/media
 
 # Loki's image runs as uid 10001 (not root), so its bind-mounted data dir
 # needs to be owned by that uid or it fails on startup with "permission
