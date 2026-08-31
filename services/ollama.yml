@@ -1,0 +1,38 @@
+networks:
+  edge:
+    external: true
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    environment:
+      - OLLAMA_PULL_MODEL=${OLLAMA_DEFAULT_MODEL:-llama3.2}
+    entrypoint: ["/bin/sh", "/ollama_entrypoint.sh"]
+    volumes:
+      - ./data/ollama:/root/.ollama
+      - ./scripts/ollama_entrypoint.sh:/ollama_entrypoint.sh:ro
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "${OPENWEBUI_PORT:-8082}:8080"
+    environment:
+      - TZ=${TZ:-UTC}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_NAME=fednet AI
+      # Open WebUI's own sign-up flow makes the first registered account
+      # admin — no separate secret needed here. WEBUI_SECRET_KEY is left
+      # unset on purpose: the image generates one and persists it under
+      # the bind-mounted data dir, so sessions still survive a restart.
+    volumes:
+      - ./data/openwebui:/app/backend/data
+    depends_on:
+      - ollama

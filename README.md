@@ -56,6 +56,7 @@ run it.
 - [Theming](#theming)
 - [Adding a new service](#adding-a-new-service)
 - [Commands](#commands)
+- [Local AI chat (Ollama + Open WebUI)](#local-ai-chat-ollama--open-webui)
 - [Backups](#backups)
 - [Honeypot](#honeypot)
 - [DNS flood detection](#dns-flood-detection)
@@ -75,6 +76,8 @@ run it.
 | [Grafana](https://grafana.com/) | Dashboards for metrics | `3000` |
 | [Prometheus](https://prometheus.io/) | Metrics collection | `9090` |
 | [BambuBuddy](https://github.com/maziggy/bambuddy) | Self-hosted Bambu Lab 3D printer dashboard | `8000` (host networking) |
+| [Ollama](https://ollama.com/) | Local LLM inference server | `11434` |
+| [Open WebUI](https://github.com/open-webui/open-webui) | Browser chat UI for Ollama | `8082` |
 
 Every service except BambuBuddy sits on a shared external Docker network
 (`edge`) and is published directly on the host's LAN ports — Caddy only
@@ -93,7 +96,7 @@ flowchart LR
 
     Client -- "DNS query" --> Pihole[Pi-hole :53]
     Client -- "http://lab.lan" --> Caddy[Caddy :80]
-    Client -- "direct ports" --> Other[Portainer / Grafana / Prometheus / Uptime Kuma / BambuBuddy]
+    Client -- "direct ports" --> Other[Portainer / Grafana / Prometheus / Uptime Kuma / BambuBuddy / Open WebUI]
 
     Pihole -- "lab.lan -> host IP" --> Caddy
     Pihole -- "blocked/allowed" --> Upstream[(Upstream DNS)]
@@ -150,6 +153,8 @@ Then edit `.env`:
 | `GRAVITY_MAX_AGE_HOURS` | optional | Alert threshold if Pi-hole's blocklist hasn't refreshed (default `48`) |
 | `BAMBUDDY_PORT` | optional | Port BambuBuddy's web UI listens on (default `8000`) |
 | `PORTAINER_API_KEY` | optional | Powers Homepage's Portainer widget (running/stopped container counts). Generate under Portainer's **My Account → Access Tokens** |
+| `OLLAMA_PORT` / `OPENWEBUI_PORT` | optional | Host ports for Ollama's API and Open WebUI's chat interface (defaults `11434` / `8082`) |
+| `OLLAMA_DEFAULT_MODEL` | optional | Model pulled automatically on first start (default `llama3.2`) — see [Local AI chat](#local-ai-chat-ollama--open-webui) |
 | `BACKUP_RESTIC_*` | **yes**, for backups | See [Backups](#backups) |
 | `HONEYPOT_WEBHOOK_URL` | optional | See [Honeypot](#honeypot) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 | `PIHOLE_FLOOD_WEBHOOK_URL` | optional | See [DNS flood detection](#dns-flood-detection) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
@@ -378,6 +383,46 @@ step, not automated: open the status page, edit it, set **Theme** to
 | `make backup-list` | List existing snapshots |
 | `make restore` | Restore the latest snapshot (`make restore SNAPSHOT=<id>` for a specific one) |
 
+## Local AI chat (Ollama + Open WebUI)
+
+`services/ollama.yml` runs [Ollama](https://ollama.com/) (local LLM
+inference) plus [Open WebUI](https://github.com/open-webui/open-webui) as
+a browser-based chat interface in front of it — a self-hosted alternative
+to a hosted AI chat product, with nothing sent off this LAN. Open
+`http://lab.lan:8082` (or your Tailscale hostname), create the first
+account (it becomes the local admin — this is Open WebUI's own signup
+flow, unrelated to anything else in this stack), and start chatting. It's
+also on the Homepage dashboard under **AI**.
+
+Everything runs on CPU by default — fine for small models but noticeably
+slower than GPU inference, especially on longer responses. If the host
+ever gets an NVIDIA GPU with `nvidia-container-toolkit` installed, add a
+`deploy.resources.reservations.devices` GPU reservation to the `ollama`
+service in `services/ollama.yml` (see [Ollama's Docker
+docs](https://github.com/ollama/ollama/blob/main/docs/docker.md)) — Ollama
+picks it up automatically, no other change needed.
+
+**Model storage** — `./data/ollama` holds every pulled model, which can
+add up to several GB each; `./data/openwebui` holds Open WebUI's own
+accounts, chat history, and settings. Both are plain bind mounts, so
+they're covered by `make backup` like the rest of `./data`.
+
+**Pulling models** — `OLLAMA_DEFAULT_MODEL` (default `llama3.2`) is
+pulled automatically the first time the `ollama` container starts,
+handled by `scripts/ollama_entrypoint.sh`, which starts `ollama serve`,
+waits for it to come up, then pulls that one model before handing off —
+no separate init container that would otherwise sit there as "Exited" in
+`make ps`. Set `OLLAMA_DEFAULT_MODEL=` (empty) in `.env` to skip this and
+pull models yourself instead:
+
+```bash
+docker exec ollama ollama pull mistral
+docker exec ollama ollama list
+```
+
+Open WebUI picks up every model pulled this way automatically — no
+separate configuration on its side.
+
 ## Backups
 
 `make backup` uses [restic](https://restic.net/) to snapshot everything
@@ -385,7 +430,8 @@ step, not automated: open the status page, edit it, set **Theme** to
 clone` of this repo can't reconstruct:
 
 - `./data/` — Caddy TLS state, Portainer, Uptime Kuma, Pi-hole's
-  `etc-pihole`/`etc-dnsmasq.d`, BambuBuddy's job archives
+  `etc-pihole`/`etc-dnsmasq.d`, BambuBuddy's job archives, Ollama's pulled
+  models, Open WebUI's accounts and chat history
 - `.env` — every service password and config value
 - the two external Docker volumes (`pihole_grafana_data`,
   `pihole_prometheus_data`) that Grafana and Prometheus use, since those

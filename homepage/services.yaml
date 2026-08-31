@@ -58,6 +58,15 @@
         ping: lab.lan
         description: Grafana view of honeypot probes
         icon: mdi-shield-alert-outline
+- AI:
+    - Open WebUI:
+        href: http://lab.lan:8082
+        ping: lab.lan
+        description: Local AI chat (Ollama)
+        icon: ollama.png
+        server: fednet
+        container: open-webui
+        showStats: true
 - 3D Printing:
     - BambuBuddy:
         href: http://lab.lan:8000

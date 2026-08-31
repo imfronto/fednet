@@ -18,6 +18,10 @@ layout:
     style: row
     columns: 5
     icon: mdi-server-network
+  AI:
+    style: row
+    columns: 5
+    icon: mdi-robot-outline
   3D Printing:
     style: row
     columns: 5
