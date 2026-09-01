@@ -39,6 +39,9 @@ run it.
 - **Reachable your way** — a local `lab.lan` hostname via Pi-hole's own
   DNS, or a Tailscale tailnet for access from anywhere, your choice (or
   both)
+- **Local AI chat** — Ollama + Open WebUI for a self-hosted,
+  nothing-leaves-the-LAN alternative to a hosted AI chat product
+- **Media server** — Jellyfin, on the same dashboard as everything else
 
 ## Table of contents
 
@@ -171,15 +174,30 @@ make up
 ```
 
 The Makefile globs every file in `services/*.yml` automatically, so this
-starts the core stack (`docker-compose.yml`) plus Pi-hole, monitoring, and
-BambuBuddy in one shot. First run pulls every image, so it can take a
-few minutes.
+starts the core stack (`docker-compose.yml`) plus every service listed in
+[Stack overview](#stack-overview) in one shot — Pi-hole, monitoring,
+BambuBuddy, Ollama/Open WebUI, and Jellyfin included. First run pulls
+every image (and Ollama's default model), so it can take a few minutes.
 
 Check everything came up healthy:
 
 ```bash
 make ps
 ```
+
+**A few services need one manual, one-time step before they're fully
+usable** — none of this is automatable without either hardcoding a
+password choice for you or scripting around each app's own account
+system, so it's left as a deliberate first-visit action instead:
+
+| Service | One-time step |
+|---|---|
+| Portainer | Open it, set the admin password on first visit |
+| Open WebUI | Open it, create the first account (becomes admin) |
+| Jellyfin | Open it, run through the setup wizard, then see [Jellyfin](#jellyfin) for the API key Homepage's widget needs |
+
+Everything else (Pi-hole, Grafana) is already configured from `.env` and
+needs no further setup.
 
 ### 4. Give it a hostname
 
