@@ -87,7 +87,7 @@
         href: http://lab.lan:8000
         ping: lab.lan
         description: Bambu Lab printer dashboard
-        icon: si-bambulab.png
+        icon: si-bambulab
         server: fednet
         container: bambuddy
         showStats: true
