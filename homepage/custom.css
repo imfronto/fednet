@@ -1,10 +1,10 @@
 html {
   background:
-    radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.22), transparent 42%),
-    radial-gradient(circle at 88% 6%, rgba(168, 85, 247, 0.18), transparent 48%),
-    radial-gradient(circle at 22% 92%, rgba(16, 185, 129, 0.16), transparent 46%),
-    radial-gradient(circle at 82% 88%, rgba(56, 189, 248, 0.10), transparent 50%),
-    linear-gradient(180deg, #05070d 0%, #090c14 100%);
+    radial-gradient(circle at 10% 5%, rgba(34, 211, 238, 0.30), transparent 40%),
+    radial-gradient(circle at 92% 8%, rgba(217, 70, 239, 0.26), transparent 45%),
+    radial-gradient(circle at 15% 95%, rgba(139, 92, 246, 0.24), transparent 48%),
+    radial-gradient(circle at 88% 90%, rgba(34, 211, 238, 0.16), transparent 50%),
+    linear-gradient(180deg, #020204 0%, #050308 100%);
   background-attachment: fixed;
 }
 
@@ -14,8 +14,8 @@ html::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    linear-gradient(rgba(139, 92, 246, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.055) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
   z-index: 0;
@@ -29,8 +29,8 @@ html::before {
 
 .service-group-name {
   font-weight: 600;
-  letter-spacing: 0.02em;
-  opacity: 0.85;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
 }
 
 /*
@@ -49,18 +49,38 @@ html::before {
 }
 
 .service-card {
-  background: transparent;
-  box-shadow: none;
-  border: 1px solid transparent;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
   padding-bottom: 0.6rem;
-  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 220ms ease, background-color 180ms ease;
 }
 
 .service-card:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(148, 163, 184, 0.18);
+  transform: translateY(-3px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+}
+
+/*
+ * Round-robin the hover glow color (cyan / magenta / purple) across
+ * tiles by grid position so the page doesn't read as one box repeated
+ * N times — the "vivid, energetic" part of the brief, kept to hover
+ * only so the resting state stays calm and the stat text stays legible.
+ */
+li.service:nth-of-type(3n+1) .service-card:hover {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 0 32px rgba(34, 211, 238, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+li.service:nth-of-type(3n+2) .service-card:hover {
+  border-color: rgba(232, 121, 249, 0.55);
+  box-shadow: 0 0 0 1px rgba(232, 121, 249, 0.25), 0 0 32px rgba(232, 121, 249, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+li.service:nth-of-type(3n) .service-card:hover {
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.25), 0 0 32px rgba(167, 139, 250, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .service-title {
@@ -73,7 +93,7 @@ html::before {
 .service-icon {
   width: 3.5rem;
   height: 3.5rem;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.25)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
 }
 
 /*
@@ -102,6 +122,7 @@ html::before {
   text-align: center;
   font-size: 0.8rem;
   padding: 0;
+  color: #f1f5f9;
 }
 
 .service-description {
@@ -116,6 +137,8 @@ html::before {
 .service-block {
   padding: 0.3rem 0.15rem;
   margin: 0.15rem;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .service-block > div:first-child {
@@ -127,8 +150,9 @@ html::before {
 }
 
 #greeting {
-  background: linear-gradient(90deg, #e2e8f0, #94a3b8);
+  background: linear-gradient(90deg, #f0f9ff, #a5f3fc, #e879f9);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  text-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
 }
