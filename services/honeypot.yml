@@ -42,6 +42,9 @@ services:
       # :- default the way a real shell does.
       - HONEYPOT_WEBHOOK_URL=${HONEYPOT_WEBHOOK_URL:-}
       - GRAVITY_WEBHOOK_URL=${GRAVITY_WEBHOOK_URL:?set GRAVITY_WEBHOOK_URL in .env}
+      - HONEYPOT_BURST_THRESHOLD=${HONEYPOT_BURST_THRESHOLD:-10}
+      - HONEYPOT_BURST_WINDOW_SECONDS=${HONEYPOT_BURST_WINDOW_SECONDS:-60}
+      - HONEYPOT_BURST_COOLDOWN_SECONDS=${HONEYPOT_BURST_COOLDOWN_SECONDS:-300}
     volumes:
       - ./data/honeypot:/data/honeypot:ro
       - ./scripts/honeypot_watchdog.sh:/honeypot_watchdog.sh:ro

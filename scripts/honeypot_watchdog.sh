@@ -42,6 +42,14 @@ proto_name() {
 BURST_THRESHOLD="${HONEYPOT_BURST_THRESHOLD:-10}"
 BURST_WINDOW_SECONDS="${HONEYPOT_BURST_WINDOW_SECONDS:-60}"
 BURST_COOLDOWN_SECONDS="${HONEYPOT_BURST_COOLDOWN_SECONDS:-300}"
+
+# .env values reach here unvalidated — ${VAR:-default} only covers unset
+# or empty, not "set to garbage". A non-numeric value would otherwise hit
+# the arithmetic below and, under `set -e`, kill the whole watchdog
+# (not just burst detection) rather than just this one feature.
+case "$BURST_THRESHOLD" in ''|*[!0-9]*) echo "invalid HONEYPOT_BURST_THRESHOLD '$BURST_THRESHOLD', using default 10" >&2; BURST_THRESHOLD=10 ;; esac
+case "$BURST_WINDOW_SECONDS" in ''|*[!0-9]*) echo "invalid HONEYPOT_BURST_WINDOW_SECONDS '$BURST_WINDOW_SECONDS', using default 60" >&2; BURST_WINDOW_SECONDS=60 ;; esac
+case "$BURST_COOLDOWN_SECONDS" in ''|*[!0-9]*) echo "invalid HONEYPOT_BURST_COOLDOWN_SECONDS '$BURST_COOLDOWN_SECONDS', using default 300" >&2; BURST_COOLDOWN_SECONDS=300 ;; esac
 PROBE_TIMES_FILE="/tmp/probe_times"
 LAST_BURST_ALERT_FILE="/tmp/last_burst_alert"
 : > "$PROBE_TIMES_FILE"
