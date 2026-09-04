@@ -31,6 +31,10 @@ services:
     networks: [edge]
     ports:
       - "9090:9090"
+    # Lets prometheus reach node-exporter's host-level metrics via a
+    # stable name instead of a fragile hardcoded bridge-gateway IP.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - pihole_prometheus_data:/prometheus
@@ -205,3 +209,53 @@ services:
         limits:
           memory: 64M
           cpus: "0.25"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57
+    container_name: cadvisor
+    restart: unless-stopped
+    networks: [edge]
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      # Docker itself is the snap package on this host (Docker Root Dir
+      # is /var/snap/docker/..., not the usual /var/lib/docker) — the
+      # standard cAdvisor tutorial mount would silently point at an empty
+      # directory here.
+      - /var/snap/docker/common/var-lib-docker:/var/lib/docker:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  node-exporter:
+    image: prom/node-exporter:latest@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    container_name: node-exporter
+    restart: unless-stopped
+    networks: [edge]
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
