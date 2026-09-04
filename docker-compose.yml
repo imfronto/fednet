@@ -16,19 +16,54 @@ services:
       - ./data/caddy/data:/data
       - ./data/caddy/config:/config
 
+  # Sits between Homepage and the real Docker socket. Homepage's `:ro`
+  # mount on docker.sock only protected the socket *file* — it never
+  # scoped the Docker Engine API reachable through it, so any RCE in
+  # Homepage was one step from full host root via the daemon. This proxy
+  # allow-lists only the GET /containers/* endpoints (list + per-container
+  # stats) that Homepage's widgets actually call; everything else,
+  # including all mutating calls, stays denied.
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    networks: [edge]
+    environment:
+      - CONTAINERS=1
+      - POST=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      # No curl/wget/nc symlinked into PATH on this minimal image, but
+      # busybox itself bundles them as subcommands. /version is a
+      # low-sensitivity Docker Engine endpoint the proxy answers
+      # regardless of the CONTAINERS/POST allow-list above, so this stays
+      # decoupled from that security-relevant config.
+      test: ["CMD", "busybox", "wget", "-qO-", "http://127.0.0.1:2375/version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
     restart: unless-stopped
     networks: [edge]
+    depends_on:
+      - docker-socket-proxy
     environment:
       - PUID=${PUID:-1000}
-      # Homepage's entrypoint uses `su-exec uid:gid`, which drops
-      # supplementary groups on the switch — group_add alone doesn't
-      # survive it. Making the docker group homepage's *primary* group
-      # is what actually gets it read access to docker.sock; the process
-      # still runs as PUID so /app/config ownership is unaffected.
-      - PGID=${DOCKER_GID:-999}
       - TZ=${TZ:-UTC}
       - HOMEPAGE_ALLOWED_HOSTS=localhost,homepage:3000,fednet,fednet:80,lab.lan,lab.lan:80,${TAILSCALE_HOSTNAME:-fednet}
       # Widget credentials, referenced from services.yaml as
@@ -42,7 +77,6 @@ services:
       - HOMEPAGE_VAR_JELLYFIN_KEY=${JELLYFIN_API_KEY:-}
     volumes:
       - ./homepage:/app/config
-      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   portainer:
     image: portainer/portainer-ce:latest

@@ -1,3 +1,4 @@
 ---
 fednet:
-  socket: /var/run/docker.sock
+  host: docker-socket-proxy
+  port: 2375
