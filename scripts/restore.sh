@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 set -a
+# shellcheck disable=SC1091  # .env is gitignored; doesn't exist in CI's checkout
 source .env
 set +a
 
