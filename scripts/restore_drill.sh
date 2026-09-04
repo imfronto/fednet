@@ -17,7 +17,19 @@ RESTIC_IMAGE="restic/restic:latest"
 # only reads the repository and restores into a throwaway directory that's
 # removed on exit, local or not.
 DRILL_DIR="$(mktemp -d)"
-trap 'rm -rf "$DRILL_DIR"' EXIT
+cleanup() {
+  # restic restores as root inside the container (see check_and_restore
+  # below), so its output under DRILL_DIR is root-owned and the host user
+  # can't rm it directly — clean up the same way, as root in a throwaway
+  # container. Failures are reported, not swallowed: a silently-failed
+  # cleanup would leave multiple GB of root-owned data under /tmp with no
+  # indication anything went wrong.
+  if ! docker run --rm -v "$DRILL_DIR:/cleanup" alpine:latest sh -c 'rm -rf /cleanup/*'; then
+    echo "warning: root-owned cleanup failed; $DRILL_DIR may still hold restored data" >&2
+  fi
+  rm -rf "$DRILL_DIR" || echo "warning: couldn't remove $DRILL_DIR — remove it manually" >&2
+}
+trap cleanup EXIT
 
 echo "==> Restore drill: proves backups are actually restorable without"
 echo "    touching the live stack, ./data, .env, or any named volume."
