@@ -20,6 +20,11 @@ services:
       - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
     cap_add:
       - NET_ADMIN
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
 
   pihole-exporter:
     image: ghcr.io/mosher-labs/pihole6-exporter:latest
@@ -31,3 +36,14 @@ services:
       - PIHOLE_API_TOKEN=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
     depends_on:
       - pihole
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9617/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"

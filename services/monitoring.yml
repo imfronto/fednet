@@ -18,6 +18,11 @@ services:
       - "3001:3001"
     volumes:
       - ./data/uptime-kuma:/app/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   prometheus:
     image: prom/prometheus:latest
@@ -29,6 +34,17 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - pihole_prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
 
   grafana:
     image: grafana/grafana:latest
@@ -49,6 +65,17 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/theme-entrypoint.sh:/theme-entrypoint.sh:ro
       - ./grafana/custom.css:/usr/share/grafana/public/fednet-custom.css:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
 
   loki:
     image: grafana/loki:latest
@@ -58,6 +85,14 @@ services:
     volumes:
       - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - ./data/loki:/loki
+    # No compose-level healthcheck: this image ships no shell and no
+    # curl/wget/nc (checked directly — exec into it fails even for `ls`),
+    # so there's no in-container way to probe its /ready endpoint.
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   promtail:
     image: grafana/promtail:latest
@@ -70,6 +105,18 @@ services:
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
+    healthcheck:
+      # No curl/wget/nc in this image either — process check instead.
+      test: ["CMD", "pgrep", "-f", "promtail"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
 
   gravity-watchdog:
     image: alpine:latest
@@ -86,6 +133,17 @@ services:
       - ./scripts/gravity_watchdog.sh:/gravity_watchdog.sh:ro
     depends_on:
       - pihole
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "gravity_watchdog.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
 
   pihole-flood-watchdog:
     image: alpine:latest
@@ -108,6 +166,17 @@ services:
     depends_on:
       - prometheus
       - pihole-exporter
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "pihole_flood_watchdog.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
 
   pihole-stats-digest:
     image: alpine:latest
@@ -125,3 +194,14 @@ services:
       - ./scripts/pihole_stats_digest.sh:/pihole_stats_digest.sh:ro
     depends_on:
       - pihole
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "pihole_stats_digest.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"

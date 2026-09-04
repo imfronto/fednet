@@ -12,6 +12,14 @@ services:
       - "${JELLYFIN_PORT:-8096}:8096"
     environment:
       - TZ=${TZ:-UTC}
+    deploy:
+      resources:
+        limits:
+          # Generous CPU ceiling: software transcoding (no GPU on this
+          # host, see below) is the one workload here that can legitimately
+          # need several cores at once.
+          memory: 2G
+          cpus: "4.0"
     volumes:
       - ./data/jellyfin/config:/config
       - ./data/jellyfin/cache:/cache

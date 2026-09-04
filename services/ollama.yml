@@ -16,6 +16,20 @@ services:
     volumes:
       - ./data/ollama:/root/.ollama
       - ./scripts/ollama_entrypoint.sh:/ollama_entrypoint.sh:ro
+    healthcheck:
+      # No curl/wget in this image — checking the server process directly.
+      test: ["CMD", "pgrep", "-f", "ollama serve"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          # Sized for a loaded quantized model (llama3.2 3B is ~2GB) plus
+          # real headroom, not just today's idle ~24MB.
+          memory: 6G
+          cpus: "4.0"
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -24,6 +38,11 @@ services:
     networks: [edge]
     ports:
       - "${OPENWEBUI_PORT:-8082}:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1.0"
     environment:
       - TZ=${TZ:-UTC}
       - OLLAMA_BASE_URL=http://ollama:11434

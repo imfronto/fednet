@@ -15,6 +15,19 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/caddy/data:/data
       - ./data/caddy/config:/config
+    healthcheck:
+      # Caddy's own admin API (localhost-only by default) — tests Caddy
+      # itself rather than Homepage's health behind it.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
 
   # Sits between Homepage and the real Docker socket. Homepage's `:ro`
   # mount on docker.sock only protected the socket *file* — it never
@@ -62,6 +75,11 @@ services:
     networks: [edge]
     depends_on:
       - docker-socket-proxy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
     environment:
       - PUID=${PUID:-1000}
       - TZ=${TZ:-UTC}
@@ -86,5 +104,18 @@ services:
     ports:
       - "9000:9000"
     volumes:
+      # Full read-write socket access is Portainer's actual job (container
+      # management), unlike Homepage's narrow dashboard-widget need above
+      # — not the same finding, left as-is by design.
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data/portainer:/data
+    # No compose-level healthcheck: the portainer-ce image ships no shell,
+    # curl, wget, or nc, and the portainer binary itself has no self-check
+    # flag (checked via --help) — there is currently no in-container way
+    # to probe it. External monitoring (Uptime Kuma, already deployed)
+    # covers this from outside the container instead.
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"

@@ -29,6 +29,20 @@ services:
     volumes:
       - ./honeypot/opencanary.conf:/root/.opencanary.conf:ro
       - ./data/honeypot:/var/tmp
+    healthcheck:
+      # No HTTP endpoint to probe (it's FTP/Telnet/MySQL/Redis/Mongo bait,
+      # not a web service) — checking the opencanaryd/twistd process is
+      # alive instead.
+      test: ["CMD", "pgrep", "-f", "opencanary"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
 
   honeypot-watchdog:
     image: alpine:latest
@@ -50,3 +64,14 @@ services:
       - ./scripts/honeypot_watchdog.sh:/honeypot_watchdog.sh:ro
     depends_on:
       - honeypot
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "honeypot_watchdog.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
