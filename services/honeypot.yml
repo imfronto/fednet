@@ -12,7 +12,7 @@ networks:
 
 services:
   honeypot:
-    image: thinkst/opencanary:latest
+    image: thinkst/opencanary:latest@sha256:c374c68b3e0f6b362baa00d6ba5ae4ad8e946383521482c6780b075c7ab41640
     container_name: honeypot
     restart: unless-stopped
     networks: [honeypot_net]

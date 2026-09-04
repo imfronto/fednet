@@ -4,7 +4,7 @@ networks:
 
 services:
   pihole:
-    image: pihole/pihole:latest
+    image: pihole/pihole:latest@sha256:f7d1be836e3bc608b56d82fc9904f5a831cdfbc0dc9c6d58f94e4c985c70038b
     container_name: pihole
     restart: unless-stopped
     networks: [edge]
@@ -27,7 +27,7 @@ services:
           cpus: "1.0"
 
   pihole-exporter:
-    image: ghcr.io/mosher-labs/pihole6-exporter:latest
+    image: ghcr.io/mosher-labs/pihole6-exporter:latest@sha256:40cccbe332ef8f3b30423b10853fb84cfb4e7613c57717943bc58276990bb085
     container_name: pihole-exporter
     restart: unless-stopped
     networks: [edge]

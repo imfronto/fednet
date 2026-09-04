@@ -4,7 +4,7 @@ networks:
 
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest@sha256:020e4134285e2ef4d8fd801234176de3b4faadc992a3eb06c8e66a2f9d4c4ba2
     container_name: ollama
     restart: unless-stopped
     networks: [edge]
@@ -32,7 +32,7 @@ services:
           cpus: "4.0"
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:main@sha256:8afd2d774834c618a75411b3491cdc5da7396dc464f56a160b937ff2992eb6e4
     container_name: open-webui
     restart: unless-stopped
     networks: [edge]

@@ -4,7 +4,7 @@ networks:
 
 services:
   caddy:
-    image: caddy:2
+    image: caddy:2@sha256:df7f1c2fb114453b951de51a98efc010db1655a92c2e86be6706714e2417a78d
     container_name: caddy
     restart: unless-stopped
     networks: [edge]
@@ -69,7 +69,7 @@ services:
         max-file: "3"
 
   homepage:
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:latest@sha256:da9dca9ec258c628146bed1445da0853f2b88f0b10bafd97c091de807c363d60
     container_name: homepage
     restart: unless-stopped
     networks: [edge]
@@ -97,7 +97,7 @@ services:
       - ./homepage:/app/config
 
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:latest@sha256:511f3f06c96fe3b993ebeaafde311c1959cae73a7ef825dba6397d51b450dffa
     container_name: portainer
     restart: unless-stopped
     networks: [edge]

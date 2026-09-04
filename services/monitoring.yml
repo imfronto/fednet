@@ -10,7 +10,7 @@ volumes:
 
 services:
   uptime-kuma:
-    image: louislam/uptime-kuma:1
+    image: louislam/uptime-kuma:1@sha256:3d632903e6af34139a37f18055c4f1bfd9b7205ae1138f1e5e8940ddc1d176f9
     container_name: uptime-kuma
     restart: unless-stopped
     networks: [edge]
@@ -25,7 +25,7 @@ services:
           cpus: "0.5"
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:latest@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
     container_name: prometheus
     restart: unless-stopped
     networks: [edge]
@@ -47,7 +47,7 @@ services:
           cpus: "1.0"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:latest@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
     container_name: grafana
     restart: unless-stopped
     networks: [edge]
@@ -78,7 +78,7 @@ services:
           cpus: "1.0"
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:latest@sha256:d70e4659623f3e109af669cae76fe2a5dd5be54e2298fe8aed380d982fbc2500
     container_name: loki
     restart: unless-stopped
     networks: [edge]
@@ -95,7 +95,7 @@ services:
           cpus: "0.5"
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:latest@sha256:6cfa64ec432b24a912d640e2edb940eeae2666f61861a66c121d763dd7241381
     container_name: promtail
     restart: unless-stopped
     networks: [edge]

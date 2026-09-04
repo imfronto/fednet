@@ -1,6 +1,6 @@
 services:
   bambuddy:
-    image: ghcr.io/maziggy/bambuddy:latest
+    image: ghcr.io/maziggy/bambuddy:latest@sha256:ab92b7b8fbe63fc0d7affe7ddbbdb9142706f170f98d243a1e0510f864e8a820
     container_name: bambuddy
     restart: unless-stopped
     # Host networking (not the edge bridge network used by every other
