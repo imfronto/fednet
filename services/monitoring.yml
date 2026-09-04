@@ -23,6 +23,11 @@ services:
         limits:
           memory: 256M
           cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   prometheus:
     image: prom/prometheus:latest@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
@@ -49,6 +54,11 @@ services:
         limits:
           memory: 512M
           cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   grafana:
     image: grafana/grafana:latest@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
@@ -80,6 +90,11 @@ services:
         limits:
           memory: 512M
           cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   loki:
     image: grafana/loki:latest@sha256:d70e4659623f3e109af669cae76fe2a5dd5be54e2298fe8aed380d982fbc2500
@@ -97,6 +112,11 @@ services:
         limits:
           memory: 256M
           cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   promtail:
     image: grafana/promtail:latest@sha256:6cfa64ec432b24a912d640e2edb940eeae2666f61861a66c121d763dd7241381
@@ -121,6 +141,11 @@ services:
         limits:
           memory: 128M
           cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   gravity-watchdog:
     image: alpine:latest
@@ -148,6 +173,11 @@ services:
         limits:
           memory: 64M
           cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   pihole-flood-watchdog:
     image: alpine:latest
@@ -181,6 +211,11 @@ services:
         limits:
           memory: 64M
           cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   pihole-stats-digest:
     image: alpine:latest
@@ -209,6 +244,11 @@ services:
         limits:
           memory: 64M
           cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57

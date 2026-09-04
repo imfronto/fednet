@@ -43,6 +43,11 @@ services:
         limits:
           memory: 128M
           cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   honeypot-watchdog:
     image: alpine:latest
@@ -75,3 +80,8 @@ services:
         limits:
           memory: 64M
           cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

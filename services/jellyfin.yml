@@ -20,6 +20,11 @@ services:
           # need several cores at once.
           memory: 2G
           cpus: "4.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./data/jellyfin/config:/config
       - ./data/jellyfin/cache:/cache

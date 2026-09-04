@@ -30,6 +30,11 @@ services:
           # real headroom, not just today's idle ~24MB.
           memory: 6G
           cpus: "4.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main@sha256:8afd2d774834c618a75411b3491cdc5da7396dc464f56a160b937ff2992eb6e4
@@ -43,6 +48,11 @@ services:
         limits:
           memory: 1.5G
           cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - TZ=${TZ:-UTC}
       - OLLAMA_BASE_URL=http://ollama:11434

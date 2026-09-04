@@ -25,6 +25,11 @@ services:
         limits:
           memory: 256M
           cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   pihole-exporter:
     image: ghcr.io/mosher-labs/pihole6-exporter:latest@sha256:40cccbe332ef8f3b30423b10853fb84cfb4e7613c57717943bc58276990bb085
@@ -47,3 +52,8 @@ services:
         limits:
           memory: 64M
           cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
