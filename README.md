@@ -566,13 +566,23 @@ volume — safe to run anytime. Run it quarterly, and after changing
 ## Honeypot
 
 `services/honeypot.yml` runs [OpenCanary](https://github.com/thinkst/opencanary),
-a low-interaction honeypot: it fakes five commonly-scanned services —
+a low-interaction honeypot: it fakes six commonly-scanned services —
 FTP (`21`), Telnet (`23`), MySQL (`3306`), Redis (`6379`), MongoDB
-(`27017`) — and logs every connection, including any credentials
-attempted. Real SSH stays on `:22`, untouched. Nothing legitimate on this
-LAN ever has a reason to touch these ports, so any hit is inherently
-suspicious — a compromised IoT device, a scanning bot that made it onto
-the network, or a malicious guest.
+(`27017`), and SSH (published on `2222`) — and logs every connection,
+including any credentials attempted. Real SSH stays on `:22`, untouched.
+Nothing legitimate on this LAN ever has a reason to touch these ports, so
+any hit is inherently suspicious — a compromised IoT device, a scanning
+bot that made it onto the network, or a malicious guest.
+
+**If you forward or trigger an external port at your router** — this
+stack has no port-forwarding by default (see above), but if you've
+opened one anyway, point it at the decoy, not the real service: e.g. an
+external `:22` rule should forward to this host's `:2222` (the SSH
+decoy), never straight to the host's real `:22`. Real remote access
+should go over Tailscale instead of a second forwarded port; forwarding
+both defeats the point of decoying the obvious one. This repo has no way
+to see or manage your router's rules — that part's on you to point
+correctly.
 
 It's deliberately **not** on the shared `edge` network or listed in
 Homepage — it sits on its own dedicated `honeypot_net`, which has no

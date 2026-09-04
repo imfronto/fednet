@@ -20,12 +20,18 @@ services:
       - /run
     ports:
       # Classic scan/bot bait — all unused on this host (verified against
-      # `ss -tln` before adding). Real SSH stays on :22, untouched.
+      # `ss -tln` before adding). Real sshd already owns the host's :22,
+      # so the decoy publishes on :2222 instead — untouched at the
+      # container/compose layer. It only sees traffic if something
+      # upstream (the router) is pointed at :2222 for external :22;
+      # real remote SSH should go over Tailscale, not a second
+      # forwarded port, or this defeats the point of decoying :22.
       - "21:21"     # FTP
       - "23:23"     # Telnet
       - "3306:3306" # MySQL
       - "6379:6379" # Redis
       - "27017:27017" # MongoDB
+      - "2222:22"   # SSH decoy (see comment above)
     volumes:
       - ./honeypot/opencanary.conf:/root/.opencanary.conf:ro
       - ./data/honeypot:/var/tmp
