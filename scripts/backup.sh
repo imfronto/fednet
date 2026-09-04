@@ -92,5 +92,58 @@ restic forget \
   --keep-monthly "${BACKUP_KEEP_MONTHLY:-6}" \
   --prune
 
+# Offsite replication (optional). Runs after the stack is already back up,
+# so a slow or failing upload never extends downtime. Reuses the same
+# repo password for both repositories — restic copy needs source and
+# destination credentials at once, and there's no reason for them to
+# differ here. Set BACKUP_B2_RESTIC_REPOSITORY to enable; left unset, this
+# is skipped entirely and the local backup above is unaffected either way.
+if [ -n "${BACKUP_B2_RESTIC_REPOSITORY:-}" ]; then
+  : "${B2_ACCOUNT_ID:?set B2_ACCOUNT_ID in .env}"
+  : "${B2_ACCOUNT_KEY:?set B2_ACCOUNT_KEY in .env}"
+
+  # RESTIC_FROM_REPOSITORY/RESTIC_FROM_PASSWORD must only be set for the
+  # copy subcommand below — restic's init also reads them (for its unrelated
+  # --copy-chunker-params feature) and refuses to run if it sees a "from"
+  # repo without that explicit flag.
+  restic_b2() {
+    docker run --rm \
+      -e RESTIC_REPOSITORY="$BACKUP_B2_RESTIC_REPOSITORY" \
+      -e RESTIC_PASSWORD="$BACKUP_RESTIC_PASSWORD" \
+      -e B2_ACCOUNT_ID="$B2_ACCOUNT_ID" \
+      -e B2_ACCOUNT_KEY="$B2_ACCOUNT_KEY" \
+      "$RESTIC_IMAGE" "$@"
+  }
+
+  restic_b2_copy() {
+    docker run --rm \
+      -e RESTIC_REPOSITORY="$BACKUP_B2_RESTIC_REPOSITORY" \
+      -e RESTIC_PASSWORD="$BACKUP_RESTIC_PASSWORD" \
+      -e RESTIC_FROM_REPOSITORY="$CONTAINER_REPO" \
+      -e RESTIC_FROM_PASSWORD="$BACKUP_RESTIC_PASSWORD" \
+      -e B2_ACCOUNT_ID="$B2_ACCOUNT_ID" \
+      -e B2_ACCOUNT_KEY="$B2_ACCOUNT_KEY" \
+      "${REPO_MOUNT[@]}" \
+      "$RESTIC_IMAGE" copy
+  }
+
+  echo "==> Replicating snapshots to Backblaze B2"
+  restic_b2 snapshots >/dev/null 2>&1 || {
+    echo "==> No existing B2 repo, initializing"
+    restic_b2 init
+  }
+  restic_b2_copy
+  restic_b2 forget \
+    --keep-daily "${BACKUP_KEEP_DAILY:-7}" \
+    --keep-weekly "${BACKUP_KEEP_WEEKLY:-4}" \
+    --keep-monthly "${BACKUP_KEEP_MONTHLY:-6}" \
+    --prune
+  echo "==> B2 replication done"
+  B2_LINE=$(restic_b2 snapshots --latest 1 --compact)
+else
+  echo "==> BACKUP_B2_RESTIC_REPOSITORY not set, skipping offsite replication"
+fi
+
 echo "==> Done"
 restic snapshots --latest 1 --compact
+[ -n "${B2_LINE:-}" ] && { echo "==> Latest B2 snapshot:"; echo "$B2_LINE"; }
