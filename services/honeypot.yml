@@ -50,7 +50,8 @@ services:
         max-file: "3"
 
   honeypot-watchdog:
-    image: alpine:latest
+    build: ./watchdog-base
+    image: fednet/watchdog-base:1
     container_name: honeypot-watchdog
     restart: unless-stopped
     networks: [edge]

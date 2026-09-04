@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-apk add --no-cache curl >/dev/null 2>&1 || true
+# curl baked into fednet/watchdog-base:1 at build time, not installed here.
 
 WEBHOOK_URL="${WEBHOOK_URL:?WEBHOOK_URL must be set}"
 MAX_AGE_HOURS="${MAX_AGE_HOURS:-48}"

@@ -148,7 +148,8 @@ services:
         max-file: "3"
 
   gravity-watchdog:
-    image: alpine:latest
+    build: ./watchdog-base
+    image: fednet/watchdog-base:1
     container_name: gravity-watchdog
     restart: unless-stopped
     networks: [edge]
@@ -180,7 +181,8 @@ services:
         max-file: "3"
 
   pihole-flood-watchdog:
-    image: alpine:latest
+    build: ./watchdog-base
+    image: fednet/watchdog-base:1
     container_name: pihole-flood-watchdog
     restart: unless-stopped
     networks: [edge]
@@ -218,7 +220,8 @@ services:
         max-file: "3"
 
   pihole-stats-digest:
-    image: alpine:latest
+    build: ./watchdog-base
+    image: fednet/watchdog-base:1
     container_name: pihole-stats-digest
     restart: unless-stopped
     networks: [edge]

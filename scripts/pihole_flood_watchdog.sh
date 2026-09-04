@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-apk add --no-cache curl jq >/dev/null 2>&1 || true
+# curl/jq baked into fednet/watchdog-base:1 at build time, not installed here.
 
 PIHOLE_FLOOD_WEBHOOK_URL="${PIHOLE_FLOOD_WEBHOOK_URL:-}"
 GRAVITY_WEBHOOK_URL="${GRAVITY_WEBHOOK_URL:-}"

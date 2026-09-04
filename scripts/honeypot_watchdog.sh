@@ -1,7 +1,10 @@
 #!/bin/sh
 set -eu
 
-apk add --no-cache curl jq coreutils >/dev/null 2>&1 || true
+# curl/jq/coreutils are baked into fednet/watchdog-base:1 at build time
+# (see watchdog-base/Dockerfile) rather than installed here at container
+# start — a restart during an internet blip used to silently leave this
+# script running with no curl/jq and no way to report that.
 
 HONEYPOT_WEBHOOK_URL="${HONEYPOT_WEBHOOK_URL:-}"
 GRAVITY_WEBHOOK_URL="${GRAVITY_WEBHOOK_URL:-}"
