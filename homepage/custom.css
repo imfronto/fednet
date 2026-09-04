@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap');
+
 html {
   background:
     radial-gradient(circle at 10% 5%, rgba(34, 211, 238, 0.30), transparent 40%),
@@ -28,6 +30,7 @@ html::before {
 }
 
 .service-group-name {
+  font-family: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
@@ -149,10 +152,48 @@ li.service:nth-of-type(3n) .service-card:hover {
   font-size: 0.52rem;
 }
 
-#greeting {
+/*
+ * The greeting has no element ID in Homepage's actual markup (verified
+ * against the rendered page, not guessed) - it's a plain <span> inside
+ * .information-widget-greeting. custom.js rewrites this span's text to a
+ * time-of-day message; the gradient clip below applies to whatever text
+ * ends up there.
+ */
+.information-widget-greeting span {
+  font-family: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
   background: linear-gradient(90deg, #f0f9ff, #a5f3fc, #e879f9);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   text-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
+}
+
+/*
+ * Give the datetime/weather/resource chips in the top info row the same
+ * glass-card language as the service tiles below, so the page reads as
+ * one system instead of styled cards sitting above plain default text.
+ * The greeting is excluded - it's meant to read as a heading, not a chip.
+ */
+#widgets-wrap > .widget-container:not(.information-widget-greeting) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.35rem 1rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.information-widget-search input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+}
+
+.information-widget-search input::placeholder {
+  color: rgba(241, 245, 249, 0.45);
+}
+
+.information-widget-search input:focus {
+  border-color: rgba(34, 211, 238, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
 }

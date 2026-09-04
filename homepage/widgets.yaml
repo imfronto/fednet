@@ -7,6 +7,7 @@
     format:
       dateStyle: long
       timeStyle: short
+      hourCycle: h23
 
 - openmeteo:
     label: Holland, MI
@@ -14,7 +15,7 @@
     longitude: -86.1089
     timezone: America/Detroit
     units: imperial
-    cache: 5
+    cache: 30
 
 - resources:
     cpu: true

@@ -1,1 +1,9 @@
-[]
+- Quick Links:
+    - Tailscale Admin:
+        - abbr: TS
+          href: https://login.tailscale.com/admin/machines
+          icon: si-tailscale
+    - Homepage Docs:
+        - abbr: HD
+          href: https://gethomepage.dev/
+          icon: si-github
