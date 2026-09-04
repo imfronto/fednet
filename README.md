@@ -404,6 +404,7 @@ step, not automated: open the status page, edit it, set **Theme** to
 | `make backup` | Snapshot everything git doesn't track (see [Backups](#backups)) |
 | `make backup-list` | List existing snapshots |
 | `make restore` | Restore the latest snapshot (`make restore SNAPSHOT=<id>` for a specific one) |
+| `make restore-drill` | Prove backups are restorable without touching the live stack (see [Backups](#backups)) |
 
 ## Local AI chat (Ollama + Open WebUI)
 
@@ -506,6 +507,8 @@ copy — configured entirely through `.env`:
 | `BACKUP_RESTIC_PASSWORD` | Encrypts and authenticates the repo. restic cannot recover a lost password and neither can anyone else — keep a copy outside this repo (password manager), or every snapshot becomes unreadable. |
 | `BACKUP_KEEP_DAILY` / `BACKUP_KEEP_WEEKLY` / `BACKUP_KEEP_MONTHLY` | Retention policy applied by `restic forget --prune` after each backup. Defaults: 7 daily, 4 weekly, 6 monthly. |
 | `BACKUP_WEBHOOK_URL` | Optional. Where `backup.sh` alerts on failure. Falls back to `GRAVITY_WEBHOOK_URL` if unset, so one Discord/Slack webhook can cover both gravity-watchdog and backup failures. |
+| `BACKUP_B2_RESTIC_REPOSITORY` | Optional — `b2:bucketname:path`. When set, `backup.sh` replicates every snapshot to Backblaze B2 after the local backup completes, so a dead disk or destroyed host doesn't take the only copy with it. Leave unset to skip offsite replication. |
+| `B2_ACCOUNT_ID` / `B2_ACCOUNT_KEY` | Required alongside `BACKUP_B2_RESTIC_REPOSITORY`. B2 application key credentials, scoped to the bucket above. |
 
 `scripts/backup.sh` runs restic inside the `restic/restic` container
 rather than on the host — two reasons: Caddy and Portainer don't drop
@@ -544,6 +547,21 @@ overwrites it from the snapshot anyway), and run `make restore`.
 crontab -e
 # 0 3 * * * cd /home/fronto/projects/homelab && ./scripts/backup.sh >> /home/fronto/backups/fednet-backup.log 2>&1
 ```
+
+**Restore drill:**
+
+```bash
+make restore-drill
+```
+
+A backup you've never restored is a hope, not a plan. `make restore-drill`
+runs `restic check --read-data` against the local repo (and the B2 one too,
+if `BACKUP_B2_RESTIC_REPOSITORY` is set), restores the latest snapshot of
+each into a throwaway directory, and spot-checks that `.env` and a few of
+the SQLite databases (Pi-hole, Grafana) came back intact. Unlike `make
+restore`, it never touches the live stack, `./data`, `.env`, or any named
+volume — safe to run anytime. Run it quarterly, and after changing
+`BACKUP_RESTIC_REPOSITORY` or rotating the B2 bucket.
 
 ## Honeypot
 

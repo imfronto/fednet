@@ -1,7 +1,7 @@
 COMPOSE_FILES := docker-compose.yml $(wildcard services/*.yml)
 COMPOSE := docker compose $(foreach f,$(COMPOSE_FILES), -f $(f))
 
-.PHONY: up down restart ps logs pull backup backup-list restore
+.PHONY: up down restart ps logs pull backup backup-list restore restore-drill
 
 up:
 	$(COMPOSE) up -d
@@ -37,3 +37,8 @@ backup-list:
 
 restore:
 	./scripts/restore.sh $(SNAPSHOT)
+
+# Safe to run anytime: restores into a throwaway directory and never
+# touches the live stack, unlike `restore` above. Run quarterly.
+restore-drill:
+	./scripts/restore_drill.sh
