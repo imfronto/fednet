@@ -1,6 +1,10 @@
 data/
 .env
 homepage/logs/
+# Personal audit-process files (instructions in, findings out) — not
+# part of the shipped repo.
+phases.md
+AUDIT_REPORT.md
 # Unused default templates Homepage auto-seeds into the config dir on
 # first boot of any integration it supports but we haven't configured.
 homepage/custom.js
