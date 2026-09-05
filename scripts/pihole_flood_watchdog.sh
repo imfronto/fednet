@@ -12,6 +12,16 @@ CHECK_INTERVAL_SECONDS="${CHECK_INTERVAL_SECONDS:-60}"
 COOLDOWN_SECONDS="${PIHOLE_FLOOD_COOLDOWN_SECONDS:-1800}"
 PROM_URL="http://prometheus:9090"
 
+# .env values reach here unvalidated — ${VAR:-default} only covers unset
+# or empty, not "set to garbage". A non-numeric threshold would make the
+# `-ge` comparisons below silently and permanently false (no error, no
+# crash — flood detection just never fires again); a non-numeric
+# CHECK_INTERVAL_SECONDS would crash-loop the container via `sleep`.
+case "$CLIENT_THRESHOLD" in ''|*[!0-9]*) echo "invalid PIHOLE_CLIENT_FLOOD_THRESHOLD '$CLIENT_THRESHOLD', using default 600" >&2; CLIENT_THRESHOLD=600 ;; esac
+case "$TOTAL_THRESHOLD" in ''|*[!0-9]*) echo "invalid PIHOLE_TOTAL_FLOOD_THRESHOLD '$TOTAL_THRESHOLD', using default 4000" >&2; TOTAL_THRESHOLD=4000 ;; esac
+case "$CHECK_INTERVAL_SECONDS" in ''|*[!0-9]*|0) echo "invalid CHECK_INTERVAL_SECONDS '$CHECK_INTERVAL_SECONDS', using default 60" >&2; CHECK_INTERVAL_SECONDS=60 ;; esac
+case "$COOLDOWN_SECONDS" in ''|*[!0-9]*) echo "invalid PIHOLE_FLOOD_COOLDOWN_SECONDS '$COOLDOWN_SECONDS', using default 1800" >&2; COOLDOWN_SECONDS=1800 ;; esac
+
 send_alert() {
   msg="$1"
   payload=$(jq -n --arg m "$msg" '{text: $m, content: $m}')

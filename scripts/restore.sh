@@ -34,15 +34,33 @@ restic() {
     "$RESTIC_IMAGE" "$@"
 }
 
+# Unlike backup.sh, this has no unattended cron run to alert from — it's
+# always run interactively, so a failure is already visible on the
+# terminal. What it does need, same as backup.sh: the stack coming back
+# up on any exit, not just success, so a failed restore doesn't leave
+# everything down with no automatic recovery.
+STACK_DOWN=0
+cleanup() {
+  status=$?
+  if [ "$STACK_DOWN" -eq 1 ]; then
+    echo "==> Restore did not complete cleanly (exit $status) — restarting stack" >&2
+    make up
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+
 echo "This will stop the stack and overwrite ./data, .env, and the"
 echo "Grafana/Prometheus volumes with snapshot '$SNAPSHOT'."
 read -rp "Continue? [y/N] " ans
 [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1
 
 make down
+STACK_DOWN=1
 
 restic restore "$SNAPSHOT" --target /
 
 make up
+STACK_DOWN=0
 
 echo "==> Restore complete. Check 'make ps' and each service's data."

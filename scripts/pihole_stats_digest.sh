@@ -11,6 +11,15 @@ TOP_COUNT="${PIHOLE_STATS_TOP_COUNT:-5}"
 INTERVAL_SECONDS="${PIHOLE_STATS_INTERVAL_SECONDS:-3600}"
 PIHOLE_URL="http://pihole"
 
+# .env values reach here unvalidated — ${VAR:-default} only covers unset
+# or empty, not "set to garbage" or "set to zero". INTERVAL_SECONDS feeds
+# `now % INTERVAL_SECONDS` below: a non-numeric value is a fatal
+# arithmetic-expansion error under `set -e` (crash-loops the container
+# on every restart), and zero specifically is a division-by-zero on the
+# same line even though it passes a plain digits-only check.
+case "$TOP_COUNT" in ''|*[!0-9]*) echo "invalid PIHOLE_STATS_TOP_COUNT '$TOP_COUNT', using default 5" >&2; TOP_COUNT=5 ;; esac
+case "$INTERVAL_SECONDS" in ''|*[!0-9]*|0) echo "invalid PIHOLE_STATS_INTERVAL_SECONDS '$INTERVAL_SECONDS', using default 3600" >&2; INTERVAL_SECONDS=3600 ;; esac
+
 send_digest() {
   now=$(date +%s)
   from=$((now - INTERVAL_SECONDS))

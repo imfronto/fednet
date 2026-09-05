@@ -67,10 +67,30 @@ restic() {
     "$RESTIC_IMAGE" "$@"
 }
 
-restic snapshots >/dev/null 2>&1 || {
+# `restic snapshots` failing doesn't necessarily mean "no repo yet" — a
+# wrong password or an unreachable repository fail the same way with a
+# bare exit-code check, and would otherwise silently `init` a fresh,
+# empty repo at whatever path this is (possibly the wrong one) instead
+# of surfacing the real error. restic's own "repository does not exist"
+# message (confirmed against a real empty repo before writing this) is
+# the distinguishing signal; anything else is a genuine failure.
+needs_init() {
+  local fn="$1" output
+  if output=$("$fn" snapshots 2>&1 >/dev/null); then
+    return 1
+  fi
+  if echo "$output" | grep -qi "repository does not exist"; then
+    return 0
+  fi
+  echo "==> $fn snapshots failed for a reason other than a missing repository:" >&2
+  echo "$output" >&2
+  exit 1
+}
+
+if needs_init restic; then
   echo "==> No existing repo, initializing"
   restic init
-}
+fi
 
 echo "==> Stopping stack for a consistent snapshot"
 make down
@@ -129,10 +149,10 @@ if [ -n "${BACKUP_B2_RESTIC_REPOSITORY:-}" ]; then
   }
 
   echo "==> Replicating snapshots to Backblaze B2"
-  restic_b2 snapshots >/dev/null 2>&1 || {
+  if needs_init restic_b2; then
     echo "==> No existing B2 repo, initializing"
     restic_b2 init
-  }
+  fi
   restic_b2_copy
   restic_b2 forget \
     --keep-daily "${BACKUP_KEEP_DAILY:-7}" \
