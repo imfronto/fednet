@@ -141,6 +141,17 @@ services:
     # point is host-level enforcement; it has no path to Pi-hole,
     # Portainer, or anything else this stack isolates the honeypot from.
     network_mode: host
+    # Stays root (crazymax/fail2ban does no internal privilege drop,
+    # confirmed via `docker exec ... whoami`), but cap_drop: [ALL] still
+    # narrows it from Docker's full default set down to exactly what it
+    # uses: NET_ADMIN/NET_RAW for real iptables manipulation. No DAC_OVERRIDE
+    # needed — every mounted path it reads or writes (jail.d, filter.d,
+    # /var/log/honeypot, its own /data) is either world-readable or
+    # root-owned, so root's normal (non-capability-gated) permission match
+    # already covers it, confirmed via `ls -la` before relying on it rather
+    # than adding the capability speculatively.
+    cap_drop:
+      - ALL
     cap_add:
       - NET_ADMIN
       - NET_RAW
