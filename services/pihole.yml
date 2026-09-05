@@ -4,7 +4,16 @@ networks:
 
 services:
   pihole:
-    image: pihole/pihole:latest@sha256:f7d1be836e3bc608b56d82fc9904f5a831cdfbc0dc9c6d58f94e4c985c70038b
+    # Built locally instead of pulled — see pihole/Dockerfile. Bakes the
+    # same file capabilities this service's cap_add already grants onto
+    # the pihole-FTL binary at build time, so the base image's own
+    # fix_capabilities() doesn't need to repeat that write (setcap) at
+    # every container start, which is what read_only below would
+    # otherwise block. Still pinned by the same digest the image: line
+    # used to carry, and still tracked by Renovate — it scans Dockerfile
+    # FROM lines for digest updates independently of the docker-compose
+    # file patterns configured in renovate.json.
+    build: ./pihole
     container_name: pihole
     restart: unless-stopped
     networks: [edge]
@@ -15,6 +24,14 @@ services:
     environment:
       - TZ=${TZ:-UTC}
       - FTLCONF_webserver_api_password=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+      # Skips ftl_config()'s own runtime `chown pihole:pihole /macvendor.db`
+      # (image rootfs, blocked by read_only below) by short-circuiting the
+      # `-z "${FTLCONF_files_macvendor:-}"` guard that call sits behind.
+      # The image already ships this file owned by pihole:pihole at build
+      # time (verified with `getcap`/`ls -la` before relying on it), so
+      # the runtime chown was always a no-op — this just stops it from
+      # being attempted.
+      - FTLCONF_files_macvendor=/macvendor.db
     volumes:
       - ./data/pihole/etc-pihole:/etc/pihole
       - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
@@ -52,23 +69,48 @@ services:
       - NET_BIND_SERVICE
       - NET_RAW
       - NET_ADMIN
-    # read_only: attempted twice, reverted both times — this is a structural
-    # incompatibility, not a missing-tmpfs-entry problem. `docker logs`
-    # (captured on the second attempt) shows the fatal one: fix_capabilities()
-    # runs `setcap ... /usr/bin/pihole-FTL` on every single startup, writing
-    # an xattr onto the FTL binary itself, which lives on the image's own
-    # rootfs layer — "Failed to set capabilities on file
-    # '/usr/bin/pihole-FTL': Read-only file system", followed by the
-    # script's own "Cannot run as non-root" error and exit. No tmpfs mount
-    # fixes that; it would need the binary's directory itself writable,
-    # defeating the point. Two more non-fatal errors in the same log
-    # confirm the image assumes a fully writable rootfs by design: a
-    # `chown` on `/macvendor.db` (image root, not persisted) and cron's
-    # own `sed`/`crontab` writing a temp file relative to `/`. Fixing this
-    # for real means patching the entrypoint or baking setcap into a custom
-    # image at build time instead of runtime — out of scope for a
-    # compose-only hardening pass. Left unset; the capability reduction
-    # above stands on its own and doesn't depend on this.
+    # read_only: third pass, now working — closed by building a custom
+    # image (pihole/Dockerfile) instead of trying to make the base image's
+    # own runtime writes fit read_only, which the previous two attempts
+    # showed is structurally impossible: fix_capabilities() unconditionally
+    # `setcap`s the FTL binary on every start, an xattr write against the
+    # image's own rootfs layer that no tmpfs mount can satisfy. The
+    # Dockerfile bakes that same capability set at build time instead, and
+    # overrides fix_capabilities() so the now-redundant runtime setcap
+    # failing under read_only is treated as expected (verified against
+    # getcap, not assumed) rather than fatal.
+    #
+    # Two more real writes from the same incident's log needed their own
+    # fix: `chown pihole:pihole /macvendor.db` is skipped via the
+    # FTLCONF_files_macvendor env var above; the tmpfs entries below cover
+    # /run and /var/log/pihole, which are plain rootfs in this image, not
+    # bind mounts. One write is deliberately left broken rather than
+    # patched: start_cron()'s `sed -i` randomization of /crontab.txt lives
+    # at container root, which stays read-only by design — tmpfs-ing `/`
+    # would defeat the point. Confirmed non-fatal in isolated testing (no
+    # `set -o errtrace` in start.sh, so a failure inside a sourced function
+    # doesn't trip its own `trap ... ERR`): cron installs successfully with
+    # its static default times instead of randomized ones, which only
+    # matters for avoiding synchronized load across many Pi-hole instances
+    # — irrelevant with the one instance this homelab runs. /etc/crontabs
+    # is tmpfs'd below so the `crontab` install itself (a separate write
+    # from the sed call, resolved through the /var/spool/cron/crontabs ->
+    # /etc/crontabs symlink) still succeeds.
+    #
+    # Tested end-to-end in an isolated container on a private network
+    # before touching the live service: fresh boot (gravity DB creation)
+    # and a warm restart (existing DB) both start clean at zero restarts;
+    # real DNS resolution and ad-blocking verified via `dig`, not just
+    # container health; `touch /` confirmed read_only is genuinely
+    # enforced, not silently ignored; FTL's actual runtime capability set
+    # (via /proc/<pid>/status) matches exactly what the capability-only
+    # pass already verified live (CHOWN/NET_BIND_SERVICE/NET_ADMIN/NET_RAW).
+    read_only: true
+    tmpfs:
+      - /run
+      - /var/log/pihole
+      - /etc/crontabs
+      - /tmp
     healthcheck:
       # The web-UI-only check above missed the real incident documented
       # above: FTL's DNS engine was dead while :80 stayed up. `pi.hole` is

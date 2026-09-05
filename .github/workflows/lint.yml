@@ -30,3 +30,20 @@ jobs:
           -f services/ollama.yml
           -f services/pihole.yml
           config --quiet
+      # `config` only validates YAML/schema — it never touches the `build:`
+      # services (watchdog-base, pihole), so a broken Dockerfile stays
+      # invisible until someone deploys it. It has already happened once
+      # here silently: a heredoc `RUN` step in pihole/Dockerfile built
+      # "successfully" under the legacy (non-BuildKit) builder while
+      # actually writing nothing, caught only by inspecting the built
+      # image's content directly. This step makes that failure mode loud.
+      - run: >
+          docker compose
+          -f docker-compose.yml
+          -f services/bambuddy.yml
+          -f services/honeypot.yml
+          -f services/jellyfin.yml
+          -f services/monitoring.yml
+          -f services/ollama.yml
+          -f services/pihole.yml
+          build
