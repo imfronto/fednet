@@ -70,7 +70,13 @@ services:
     # compose-only hardening pass. Left unset; the capability reduction
     # above stands on its own and doesn't depend on this.
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/admin/"]
+      # The web-UI-only check above missed the real incident documented
+      # above: FTL's DNS engine was dead while :80 stayed up. `pi.hole` is
+      # FTL's own built-in local A record (confirmed live: resolves to
+      # 127.0.0.1 regardless of upstream/internet reachability), so this
+      # actually exercises the DNS engine on :53 in addition to the web UI,
+      # without depending on anything outside the container.
+      test: ["CMD-SHELL", "dig +time=2 +tries=1 @127.0.0.1 pi.hole >/dev/null && wget --no-verbose --tries=1 --spider http://localhost/admin/"]
       interval: 30s
       timeout: 5s
       retries: 3
