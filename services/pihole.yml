@@ -18,20 +18,57 @@ services:
     volumes:
       - ./data/pihole/etc-pihole:/etc/pihole
       - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
-    # Reverted: cap_drop: ALL (even with NET_ADMIN/NET_BIND_SERVICE/
-    # SETUID/SETGID/SETPCAP/SETFCAP all added back one error at a time)
-    # got FTL's own capability self-management working, but actual DNS
-    # resolution on :53 then failed outright ("connection refused") —
-    # likely FTL successfully dropping to a low-priv internal user for
-    # the first time (previously that drop silently failed and stayed
-    # root) and landing somewhere without access to its own log/run
-    # paths. This is the sharpest SPOF in the whole stack (Phase 10);
-    # not worth another live round of trial-and-error against real DNS
-    # service. Left as the one container in this rollout not hardened —
-    # worth a dedicated, careful pass on its own, not squeezed into
-    # this batch.
+    # Second attempt, evidence-based rather than guessed: read the actual
+    # entrypoint chain inside the running image (start.sh, bash_functions.sh's
+    # fix_capabilities(), pihole-FTL-prestart.sh) instead of trial-and-error.
+    # Root cause of the earlier revert: CAP_CHOWN was missing from cap_add,
+    # so pihole-FTL-prestart.sh's `install -o pihole -g pihole /run/pihole-FTL.pid`
+    # — a file recreated from scratch on every start, since /run isn't a
+    # persistent volume, unlike /etc/pihole — silently failed to set
+    # ownership. FTL then starts as uid 1000 (via `capsh --user=pihole
+    # --keep=1`, confirmed live: PID 1/start.sh stays root, the FTL process
+    # itself runs as pihole:pihole) and can't write its own pidfile, which
+    # broke DNS while the healthcheck (HTTP-only, :80) stayed green. CAP_NET_RAW
+    # was also missing, so fix_capabilities()'s own `capsh --has-p` probe
+    # skipped granting it as a file capability on the FTL binary. This set
+    # keeps every capability the image's own scripts demonstrably touch and
+    # drops only the four Docker-default capabilities nothing in pihole/FTL's
+    # source ever references: AUDIT_WRITE, MKNOD, SYS_CHROOT, FSETID.
+    # read_only deliberately not attempted in this pass — /run and
+    # /var/log/pihole are plain rootfs here (confirmed via /proc/mounts),
+    # not bind mounts, so that needs its own tmpfs step and its own
+    # verification, not stacked with this one.
+    cap_drop:
+      - ALL
     cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - KILL
+      - SETGID
+      - SETUID
+      - SETPCAP
+      - SETFCAP
+      - NET_BIND_SERVICE
+      - NET_RAW
       - NET_ADMIN
+    # read_only: attempted twice, reverted both times — this is a structural
+    # incompatibility, not a missing-tmpfs-entry problem. `docker logs`
+    # (captured on the second attempt) shows the fatal one: fix_capabilities()
+    # runs `setcap ... /usr/bin/pihole-FTL` on every single startup, writing
+    # an xattr onto the FTL binary itself, which lives on the image's own
+    # rootfs layer — "Failed to set capabilities on file
+    # '/usr/bin/pihole-FTL': Read-only file system", followed by the
+    # script's own "Cannot run as non-root" error and exit. No tmpfs mount
+    # fixes that; it would need the binary's directory itself writable,
+    # defeating the point. Two more non-fatal errors in the same log
+    # confirm the image assumes a fully writable rootfs by design: a
+    # `chown` on `/macvendor.db` (image root, not persisted) and cron's
+    # own `sed`/`crontab` writing a temp file relative to `/`. Fixing this
+    # for real means patching the entrypoint or baking setcap into a custom
+    # image at build time instead of runtime — out of scope for a
+    # compose-only hardening pass. Left unset; the capability reduction
+    # above stands on its own and doesn't depend on this.
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/admin/"]
       interval: 30s
