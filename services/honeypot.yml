@@ -16,6 +16,24 @@ services:
     container_name: honeypot
     restart: unless-stopped
     networks: [honeypot_net]
+    # The one container built to face hostile input previously had the
+    # least hardening of any in this stack (default capabilities, root,
+    # writable rootfs) — network isolation was the only layer behind it.
+    # All three add-backs were found by testing, not guessed: NET_BIND_SERVICE
+    # to bind the three privileged ports (21, 22, 23); SETUID/SETGID because
+    # OpenCanary's own startup binds as root then drops to uid/gid 65534 —
+    # cap_drop: ALL alone made that drop fail ("Operation not permitted"),
+    # crash-looping the container. no-new-privileges was tried and reverted:
+    # it made every exec of the venv's own opencanaryd fail outright, most
+    # likely because the binary relies on a file capability that
+    # no-new-privileges specifically blocks the kernel from honoring.
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - SETUID
+      - SETGID
+    read_only: true
     tmpfs:
       - /run
     ports:
