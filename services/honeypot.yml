@@ -92,3 +92,58 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  honeypot-fail2ban:
+    # Turns the honeypot's existing detection into an actual response.
+    # Originally scoped against Portainer's login attempts, but Portainer
+    # CE logs no source IP for a failed login even at DEBUG (verified
+    # directly, including against a disposable non-live instance before
+    # touching anything real) — there's nothing there to ban. Redirected
+    # to the honeypot instead: every real probe includes src_host, and
+    # this repo's own README already treats any touch as inherently
+    # suspicious, which is exactly Fail2ban's assumption for a
+    # maxretry=1 jail (see honeypot/fail2ban/jail.d/opencanary.conf).
+    image: crazymax/fail2ban:latest@sha256:2bc26b68f373ce6e52bbd181de2937a6694f72b74ddf15bbd1b25e90553dcda3
+    container_name: honeypot-fail2ban
+    restart: unless-stopped
+    # Host networking + NET_ADMIN/NET_RAW are unavoidable here, unlike
+    # every other container in this stack — actually banning an IP means
+    # manipulating the host's real netfilter tables, not a namespaced
+    # per-container one. This is the one deliberate exception to this
+    # repo's container-isolation posture, taken on because the whole
+    # point is host-level enforcement; it has no path to Pi-hole,
+    # Portainer, or anything else this stack isolates the honeypot from.
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TZ=${TZ:-UTC}
+      - F2B_LOG_LEVEL=INFO
+      - F2B_DB_PURGE_AGE=30d
+    volumes:
+      - ./honeypot/fail2ban/jail.d:/data/jail.d:ro
+      - ./honeypot/fail2ban/filter.d:/data/filter.d:ro
+      - ./data/honeypot:/var/log/honeypot:ro
+      - ./data/honeypot-fail2ban:/data
+      # Coordinates with Docker's own iptables usage on this host so the
+      # two never corrupt each other's rule updates mid-write.
+      - /var/run/xtables.lock:/var/run/xtables.lock:rw
+    depends_on:
+      - honeypot
+    healthcheck:
+      test: ["CMD", "fail2ban-client", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
