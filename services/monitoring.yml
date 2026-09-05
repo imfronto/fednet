@@ -294,7 +294,17 @@ services:
     image: prom/node-exporter:latest@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
     container_name: node-exporter
     restart: unless-stopped
-    networks: [edge]
+    # Host networking, not the edge bridge: on the bridge, node-exporter
+    # can only see its own container's eth0/lo, so node_network_* metrics
+    # never reflect the host's real interfaces (eno1, tailscale0). This
+    # trades that blind spot for the same cost bambuddy already carries —
+    # node-exporter's :9100 is now reachable from the LAN directly (and
+    # pending the still-open IPv6 firewall question, potentially further
+    # than that), not just from containers on edge. Prometheus already
+    # had `host.docker.internal:host-gateway` wired up for exactly this
+    # (see its own service block) — only the scrape target itself
+    # (prometheus/prometheus.yml) needed to catch up.
+    network_mode: host
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
