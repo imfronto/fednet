@@ -8,8 +8,17 @@ services:
     # RTSP camera proxy, both of which need L2 multicast/raw port access
     # that a bridge network can't provide.
     network_mode: host
+    # PUID/PGID below is the LinuxServer.io-style convention: starts as
+    # root, drops to that uid/gid internally — SETUID/SETGID kept for
+    # that, same pattern already found needed for the honeypot and
+    # uptime-kuma.
+    cap_drop:
+      - ALL
     cap_add:
       - NET_BIND_SERVICE
+      - SETUID
+      - SETGID
+    read_only: true
     environment:
       - TZ=${TZ:-UTC}
       - PUID=${PUID:-1000}
