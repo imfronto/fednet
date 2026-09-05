@@ -65,3 +65,9 @@ services:
       - ./data/openwebui:/app/backend/data
     depends_on:
       - ollama
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
