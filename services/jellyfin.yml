@@ -18,6 +18,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    # Stays root: config/cache are already root-owned — switching uid
+    # would need chowning live Jellyfin state first, a real risk for
+    # marginal benefit over capability restriction alone.
+    cap_drop:
+      - ALL
+    read_only: true
     deploy:
       resources:
         limits:
