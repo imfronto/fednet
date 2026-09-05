@@ -18,6 +18,21 @@ services:
       - "3001:3001"
     volumes:
       - ./data/uptime-kuma:/app/data
+    # Stays root: kuma.db and its WAL files are already root-owned,
+    # rwxr-xr-x (no group/other write) — switching uid would need
+    # chown-ing a live, actively-written SQLite database first, a real
+    # corruption risk for marginal benefit over capability restriction
+    # alone (DAC checks don't apply to root regardless).
+    # SETUID/SETGID needed too: its own entrypoint runs `setpriv` to
+    # manage its own groups at startup (same "app does its own
+    # privilege drop" pattern as OpenCanary) — cap_drop: ALL alone
+    # made that fail ("setgroups failed: Operation not permitted").
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    read_only: true
     healthcheck:
       test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:3001/"]
       interval: 30s
@@ -49,6 +64,11 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - pihole_prometheus_data:/prometheus
+    # Already non-root by the image's own default (Phase 6). TSDB writes
+    # go to the named volume, not rootfs, so read_only doesn't touch them.
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9090/-/healthy"]
       interval: 30s
@@ -77,8 +97,22 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
     # Root only to let theme-entrypoint.sh patch index.html at startup;
     # it drops to grafana's normal uid (472) via su before running the
-    # actual server.
+    # actual server. No read_only here, deliberately: that patch is a
+    # sed -i against a file baked into the image itself, not a bind
+    # mount — a read-only rootfs would break the one thing this
+    # container's root access exists for. SETUID/SETGID kept for the
+    # su step itself (same pattern as the honeypot/pihole/others).
     user: "0:0"
+    # DAC_OVERRIDE also needed: even at uid 0, root loses its usual
+    # bypass-any-permission-check power without this specific
+    # capability — sed -i's temp-file-in-directory step failed
+    # ("Permission denied") without it, despite still running as root.
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
     entrypoint: ["/bin/sh", "/theme-entrypoint.sh"]
     volumes:
       - pihole_grafana_data:/var/lib/grafana
@@ -110,6 +144,11 @@ services:
     volumes:
       - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - ./data/loki:/loki
+    # Already non-root by the image's own default (uid 10001, Phase 6).
+    # Storage writes go to the bind-mounted /loki, not rootfs.
+    cap_drop:
+      - ALL
+    read_only: true
     # No compose-level healthcheck: this image ships no shell and no
     # curl/wget/nc (checked directly — exec into it fails even for `ls`),
     # so there's no in-container way to probe its /ready endpoint.
@@ -135,6 +174,15 @@ services:
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
+    # Needs a writable /tmp for its own positions.yaml (tracks read
+    # offset per log file so a restart doesn't reprocess everything) —
+    # promtail-config.yml points it there, found by checking rather
+    # than assuming a stateless exporter shape like the other watchdogs.
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     healthcheck:
       # No curl/wget/nc in this image either — process check instead.
       test: ["CMD", "pgrep", "-f", "promtail"]
@@ -169,6 +217,13 @@ services:
       - ./scripts/gravity_watchdog.sh:/gravity_watchdog.sh:ro
     depends_on:
       - pihole
+    # Reads gravity.db (world-readable, :ro anyway) and makes outbound
+    # curl calls — no local writes, no privileged ports, no reason to
+    # be root or hold any capability.
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "pgrep", "-f", "gravity_watchdog.sh"]
       interval: 30s
@@ -208,6 +263,12 @@ services:
     depends_on:
       - prometheus
       - pihole-exporter
+    # Queries Prometheus and posts webhooks — no local writes, no
+    # privileged ports, no reason to be root or hold any capability.
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "pgrep", "-f", "pihole_flood_watchdog.sh"]
       interval: 30s
@@ -242,6 +303,12 @@ services:
       - ./scripts/pihole_stats_digest.sh:/pihole_stats_digest.sh:ro
     depends_on:
       - pihole
+    # Calls Pi-hole's API and posts webhooks — no local writes, no
+    # privileged ports, no reason to be root or hold any capability.
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "pgrep", "-f", "pihole_stats_digest.sh"]
       interval: 30s
@@ -273,6 +340,15 @@ services:
       # standard cAdvisor tutorial mount would silently point at an empty
       # directory here.
       - /var/snap/docker/common/var-lib-docker:/var/lib/docker:ro
+    # Stays root: cAdvisor introspects other containers' cgroups.
+    # Confirmed by testing that dropping all capabilities doesn't
+    # change its metric output either way (container-name labeling was
+    # already absent even in the fully unhardened config — a
+    # pre-existing snap-Docker cgroup-naming quirk, not something this
+    # change caused), so there's no functional cost to restricting it.
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/metrics"]
       interval: 30s
@@ -314,6 +390,12 @@ services:
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    # Already non-root by the image's own default (uid 65534, Phase 6).
+    # Purely reads /proc, /sys, /rootfs (all :ro) and serves metrics —
+    # no writable path needed anywhere.
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
       interval: 30s
