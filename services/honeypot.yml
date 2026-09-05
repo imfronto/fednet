@@ -94,6 +94,15 @@ services:
       - ./scripts/honeypot_watchdog.sh:/honeypot_watchdog.sh:ro
     depends_on:
       - honeypot
+    # Only local write is its own burst-detection state under /tmp
+    # (probe_times, last_burst_alert) — a tmpfs covers that; everything
+    # else is reads and outbound curl calls.
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     healthcheck:
       test: ["CMD", "pgrep", "-f", "honeypot_watchdog.sh"]
       interval: 30s
