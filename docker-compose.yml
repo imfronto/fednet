@@ -23,6 +23,14 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    # Official Caddy image doesn't do its own internal privilege drop
+    # (unlike several other containers in this stack) — just needs
+    # NET_BIND_SERVICE for ports 80/443, no SETUID/SETGID.
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
     deploy:
       resources:
         limits:
@@ -51,6 +59,22 @@ services:
       - POST=0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    # gid must match the host's docker group (getent group docker) —
+    # the socket is root:docker 660, so a non-root reader needs that
+    # exact gid, not just any low-privilege uid.
+    user: "65534:107"
+    cap_drop:
+      - ALL
+    read_only: true
+    # Its own entrypoint generates /tmp/haproxy.cfg from the
+    # CONTAINERS/POST env vars at startup, and haproxy itself needs
+    # /run for its pidfile — neither documented anywhere obvious,
+    # both found by testing. /run needs an explicit mode: Docker's
+    # tmpfs default for it is root:root 755, unlike /tmp's standard
+    # 1777, so the non-root user here couldn't write to it otherwise.
+    tmpfs:
+      - /tmp
+      - /run:mode=1777
     healthcheck:
       # No curl/wget/nc symlinked into PATH on this minimal image, but
       # busybox itself bundles them as subcommands. /version is a
@@ -86,6 +110,26 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+    # Stays root: ./homepage config dir is fronto:root-owned (tracked
+    # git files the user edits directly), and Homepage auto-seeds new
+    # template files into it on first boot of an unconfigured
+    # integration (Phase 1) — switching uid risks breaking that write.
+    # SETUID/SETGID needed: its entrypoint uses su-exec to manage its
+    # own PUID-based ownership internally (same pattern as the
+    # honeypot/uptime-kuma/bambuddy). Its startup also tries to chown
+    # /app/.next (the image's pre-built Next.js production build) and
+    # fails under read_only — but that chown attempt already degrades
+    # gracefully ("continuing anyway") on its own, so it's left alone
+    # rather than given a tmpfs: mounting one over /app/.next would
+    # replace the actual pre-built app with an empty directory, which
+    # was tried and broke startup outright ("Could not find a
+    # production build").
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    read_only: true
     deploy:
       resources:
         limits:
@@ -130,6 +174,15 @@ services:
     # flag (checked via --help) — there is currently no in-container way
     # to probe it. External monitoring (Uptime Kuma, already deployed)
     # covers this from outside the container instead.
+    # Stays root: /data's internals (portainer.db, bin, certs, chisel,
+    # compose) are already root-owned at mode 700/600 — switching uid
+    # would break access to its own database. No cap_add needed: unlike
+    # Caddy/Pi-hole, it binds no privileged port, and the actual
+    # privileged operations happen on the daemon side of the socket,
+    # not in this process.
+    cap_drop:
+      - ALL
+    read_only: true
     deploy:
       resources:
         limits:
