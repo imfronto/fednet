@@ -18,6 +18,18 @@ services:
     volumes:
       - ./data/pihole/etc-pihole:/etc/pihole
       - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    # Reverted: cap_drop: ALL (even with NET_ADMIN/NET_BIND_SERVICE/
+    # SETUID/SETGID/SETPCAP/SETFCAP all added back one error at a time)
+    # got FTL's own capability self-management working, but actual DNS
+    # resolution on :53 then failed outright ("connection refused") —
+    # likely FTL successfully dropping to a low-priv internal user for
+    # the first time (previously that drop silently failed and stayed
+    # root) and landing somewhere without access to its own log/run
+    # paths. This is the sharpest SPOF in the whole stack (Phase 10);
+    # not worth another live round of trial-and-error against real DNS
+    # service. Left as the one container in this rollout not hardened —
+    # worth a dedicated, careful pass on its own, not squeezed into
+    # this batch.
     cap_add:
       - NET_ADMIN
     healthcheck:
@@ -47,6 +59,12 @@ services:
       - PIHOLE_API_TOKEN=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
     depends_on:
       - pihole
+    # Stateless: reads Pi-hole's API, serves metrics — no local writes,
+    # no privileged ports, no reason to be root or hold any capability.
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9617/metrics"]
       interval: 30s
