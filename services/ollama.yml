@@ -16,6 +16,12 @@ services:
     volumes:
       - ./data/ollama:/root/.ollama
       - ./scripts/ollama_entrypoint.sh:/ollama_entrypoint.sh:ro
+    # Stays root: model storage under /root/.ollama is already
+    # root-owned — switching uid risks breaking access to already
+    # -downloaded model blobs for marginal benefit.
+    cap_drop:
+      - ALL
+    read_only: true
     healthcheck:
       # No curl/wget in this image — checking the server process directly.
       test: ["CMD", "pgrep", "-f", "ollama serve"]
@@ -59,12 +65,32 @@ services:
       - WEBUI_NAME=fednet AI
       # Open WebUI's own sign-up flow makes the first registered account
       # admin — no separate secret needed here. WEBUI_SECRET_KEY is left
-      # unset on purpose: the image generates one and persists it under
-      # the bind-mounted data dir, so sessions still survive a restart.
+      # unset on purpose so the image generates one instead — but its
+      # start.sh defaults that key's file to a path relative to its own
+      # working directory (/app/backend), not the bind-mounted data dir,
+      # so it never actually survived a container recreate (every
+      # recreate silently invalidated all sessions). Read-only rootfs
+      # surfaced this as a hard failure instead of a silent one;
+      # pointing it at the bind mount fixes the real bug, not just the
+      # new error.
+      - WEBUI_SECRET_KEY_FILE=/app/backend/data/.webui_secret_key
     volumes:
       - ./data/openwebui:/app/backend/data
     depends_on:
       - ollama
+    # Stays root: cache/uploads/vector_db are already root-owned (Phase 6
+    # already found this undocumented) — switching uid risks breaking
+    # access to a live vector DB for marginal benefit over capability
+    # restriction alone.
+    cap_drop:
+      - ALL
+    read_only: true
+    # Python's own tempfile module needs a usable temp dir somewhere
+    # (uploads, ML processing) — none of its fallback candidates
+    # (/tmp, /var/tmp, /usr/tmp, /app/backend) exist as writable
+    # without this.
+    tmpfs:
+      - /tmp
     healthcheck:
       test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
