@@ -5,7 +5,6 @@ homepage/logs/
 # part of the shipped repo.
 phases.md
 AUDIT_REPORT.md
-# Unused default templates Homepage auto-seeds into the config dir on
+# Unused default template Homepage auto-seeds into the config dir on
 # first boot of any integration it supports but we haven't configured.
-homepage/custom.js
 homepage/proxmox.yaml
