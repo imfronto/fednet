@@ -2,21 +2,23 @@
    Paste into: edit the status page -> gear icon -> Custom CSS.
    Also set the status page's Theme dropdown to "Dark" first — this
    builds on Uptime Kuma's own dark palette rather than replacing it,
-   same approach used for Grafana's theming. */
+   same approach used for Grafana's theming.
+
+   Matches the restrained graphite/single-accent palette in
+   homepage/custom.css — one visual identity across Homepage, Grafana and
+   this status page, not three different looks. */
 
 body {
   background:
-    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
-    radial-gradient(circle at 85% 0%, rgba(168, 85, 247, 0.1), transparent 45%),
-    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08), transparent 50%),
-    linear-gradient(180deg, #05070d 0%, #090c14 100%) !important;
+    radial-gradient(ellipse 1200px 700px at 50% -10%, rgba(45, 212, 191, 0.06), transparent 60%),
+    #0a0c10 !important;
   background-attachment: fixed !important;
 }
 
+/* Flat fill instead of a blur, matching Homepage's card treatment — no
+   colorful gradient behind these boxes to blur anymore. */
 .shadow-box {
-  background: rgba(255, 255, 255, 0.03) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: #14181f !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
 }
@@ -30,5 +32,5 @@ body {
 }
 
 a {
-  color: #38bdf8;
+  color: #2dd4bf;
 }

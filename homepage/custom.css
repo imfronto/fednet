@@ -1,12 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap');
+/*
+ * fednet dashboard — custom design system on top of gethomepage/homepage.
+ *
+ * Homepage ships as a prebuilt Next.js app (no source in this repo); this
+ * file and custom.js are the only real customization surface, alongside
+ * the YAML configs. Every selector below is copied from Homepage's actual
+ * component source (gethomepage/homepage, src/components/...) as of this
+ * writing, not guessed from the rendered page — Homepage is client-
+ * rendered, so curling it only returns a JSON props blob, not real markup.
+ *
+ * Design direction: a restrained, single-accent "engineering console"
+ * look — flat dark surfaces with a few levels of elevation, one accent
+ * color used sparingly, system fonts (no external font request), and
+ * motion limited to fast/subtle hover feedback. Deliberately not the
+ * multi-neon-gradient/animated-starfield look this file used to have.
+ */
+
+:root {
+  --fednet-bg: #0a0c10;
+  --fednet-bg-elevated: #101319;
+  --fednet-surface: #14181f;
+  --fednet-surface-hover: #1a1f28;
+  --fednet-surface-sunken: rgba(255, 255, 255, 0.035);
+  --fednet-border: rgba(255, 255, 255, 0.08);
+  --fednet-border-hover: rgba(45, 212, 191, 0.45);
+
+  --fednet-text-primary: #e7ecf3;
+  --fednet-text-secondary: #9aa5b4;
+  /* #828d9b, not a darker gray: measured at 5.3:1 on --fednet-surface and
+     5.8:1 on --fednet-bg, clearing WCAG AA (4.5:1) for the normal-size
+     text that uses it (.service-description, footer, fleet timestamp) —
+     a darker muted tone here reads fine visually but fails contrast. */
+  --fednet-text-muted: #828d9b;
+
+  --fednet-accent: #2dd4bf;
+  --fednet-accent-soft: rgba(45, 212, 191, 0.14);
+  --fednet-success: #10b981;
+  --fednet-warning: #f59e0b;
+  /* rose-400, not the more saturated rose-500: measured contrast on the
+     dark surfaces this is used against (card/sunken backgrounds) clears
+     WCAG AA with margin (6:1+); rose-500 landed at 4.45:1, just under the
+     4.5:1 threshold for normal-size text. */
+  --fednet-danger: #fb7185;
+  --fednet-info: #38bdf8;
+
+  --fednet-font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --fednet-font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --fednet-radius: 0.625rem;
+  --fednet-transition-fast: 140ms ease;
+}
+
+/* ---------------------------------------------------------------------
+ * Base surface: flat graphite with one quiet vignette and a faint dot
+ * grid. Static — no animation. Replaces the old three-color nebula
+ * gradient + animated canvas starfield.
+ * ------------------------------------------------------------------- */
 
 html {
   background:
-    radial-gradient(circle at 10% 5%, rgba(34, 211, 238, 0.30), transparent 40%),
-    radial-gradient(circle at 92% 8%, rgba(217, 70, 239, 0.26), transparent 45%),
-    radial-gradient(circle at 15% 95%, rgba(139, 92, 246, 0.24), transparent 48%),
-    radial-gradient(circle at 88% 90%, rgba(34, 211, 238, 0.16), transparent 50%),
-    linear-gradient(180deg, #020204 0%, #050308 100%);
+    radial-gradient(ellipse 1200px 700px at 50% -10%, rgba(45, 212, 191, 0.07), transparent 60%),
+    var(--fednet-bg);
   background-attachment: fixed;
 }
 
@@ -15,99 +70,98 @@ html::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(139, 92, 246, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.055) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 0%, black, transparent 70%);
   z-index: 0;
 }
 
 #information-widgets,
-#services {
+#layout-groups,
+#services,
+#bookmarks,
+#footer {
   position: relative;
   z-index: 1;
 }
 
-.service-group-name {
-  font-family: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+body {
+  font-family: var(--fednet-font-sans);
 }
 
-/*
- * Desktop-icon reskin below. Selectors are copied from Homepage's actual
- * component source (components/services/item.jsx, group.jsx, list.jsx,
- * widget/block.jsx as of the gethomepage/homepage repo) rather than
- * guessed from the rendered page — Homepage is client-rendered, so
- * curling it only returns a JSON props blob, not real markup, and the
- * Grafana theming in this repo already found out the hard way what
- * guessed selectors cost (matched zero real elements).
- */
+/* ---------------------------------------------------------------------
+ * Group headers
+ * ------------------------------------------------------------------- */
+
+.service-group-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fednet-text-secondary);
+}
+
+.service-group-icon {
+  color: var(--fednet-accent);
+  opacity: 0.9;
+}
+
+/* ---------------------------------------------------------------------
+ * Service grid — auto-fill instead of Homepage's fixed N-column track
+ * count. A group with 1 service no longer reserves 4 empty column
+ * tracks next to it, and a group with 6 services in a `columns: 5`
+ * config no longer wraps an orphan 6th tile onto its own row. This also
+ * means the layout keeps working unmodified as services are added or
+ * removed, instead of needing `columns:` retuned by hand each time.
+ * ------------------------------------------------------------------- */
 
 .services-list {
-  row-gap: 1.5rem;
-  column-gap: 1rem;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+  row-gap: 1rem;
+  column-gap: 0.85rem;
 }
 
+/* ---------------------------------------------------------------------
+ * Service cards
+ * ------------------------------------------------------------------- */
+
 .service-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  padding-bottom: 0.6rem;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 220ms ease, background-color 180ms ease;
+  background: var(--fednet-surface);
+  border: 1px solid var(--fednet-border);
+  border-radius: var(--fednet-radius);
+  padding-bottom: 0.5rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 6px 16px rgba(0, 0, 0, 0.28);
+  transition: border-color var(--fednet-transition-fast), background-color var(--fednet-transition-fast),
+    transform var(--fednet-transition-fast);
 }
 
 .service-card:hover {
-  transform: translateY(-3px);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  background: var(--fednet-surface-hover);
+  border-color: var(--fednet-border-hover);
 }
 
-/*
- * Round-robin the hover glow color (cyan / magenta / purple) across
- * tiles by grid position so the page doesn't read as one box repeated
- * N times — the "vivid, energetic" part of the brief, kept to hover
- * only so the resting state stays calm and the stat text stays legible.
- */
-li.service:nth-of-type(3n+1) .service-card:hover {
-  border-color: rgba(34, 211, 238, 0.55);
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 0 32px rgba(34, 211, 238, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-li.service:nth-of-type(3n+2) .service-card:hover {
-  border-color: rgba(232, 121, 249, 0.55);
-  box-shadow: 0 0 0 1px rgba(232, 121, 249, 0.25), 0 0 32px rgba(232, 121, 249, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-li.service:nth-of-type(3n) .service-card:hover {
-  border-color: rgba(167, 139, 250, 0.55);
-  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.25), 0 0 32px rgba(167, 139, 250, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
+@media (prefers-reduced-motion: no-preference) {
+  .service-card:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .service-title {
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.9rem 0.5rem 0.3rem;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem 0.4rem;
 }
 
 .service-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.25)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 0.4rem;
+  background: var(--fednet-surface-sunken);
+  padding: 0.4rem;
 }
 
-/*
- * !important is load-bearing here, not stylistic: ResolvedIcon (Homepage's
- * icon component) always sets an inline width/height style itself — an
- * <img> for plain file icons, a masked <div> for si-/mdi- ones — and an
- * inline style beats an external stylesheet rule of equal specificity
- * regardless of source order. Without !important this whole enlarge-the-
- * icon rule is a no-op: the container grows but its contents stay pinned
- * at Homepage's 32px default.
- */
 .service-icon > * {
   width: 100% !important;
   height: 100% !important;
@@ -115,85 +169,224 @@ li.service:nth-of-type(3n) .service-card:hover {
 }
 
 .service-title-text {
-  flex: none;
-  width: 100%;
-  justify-content: center;
+  min-width: 0;
 }
 
 .service-name {
-  flex: none;
-  text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fednet-text-primary);
   padding: 0;
-  color: #f1f5f9;
 }
 
 .service-description {
-  display: none;
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--fednet-font-mono);
+  font-size: 0.68rem;
+  color: var(--fednet-text-muted);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .service-tags {
-  top: 0.35rem;
-  right: 0.35rem;
+  top: 0.6rem;
+  right: 0.6rem;
+}
+
+/* ---------------------------------------------------------------------
+ * Status / ping dots — Homepage sets these colors itself via inline
+ * Tailwind utility classes (bg-emerald-500 / bg-rose-500 / bg-orange-400
+ * / bg-blue-500, per ping.jsx and status.jsx). Left as-is on purpose:
+ * that's a real, meaningful semantic already in place, not something to
+ * skin over. Only the surrounding chrome is restyled here.
+ * ------------------------------------------------------------------- */
+
+.ping-status,
+.docker-status {
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------------------
+ * Per-container live stats (CPU / mem / rx / tx) — real data from
+ * Homepage's Docker widget, shown because every service in services.yaml
+ * already sets showStats + container + server.
+ * ------------------------------------------------------------------- */
+
+.service-stats {
+  padding: 0 0.9rem;
 }
 
 .service-block {
+  background: var(--fednet-surface-sunken);
+  border: 1px solid var(--fednet-border);
+  border-radius: 0.4rem;
   padding: 0.3rem 0.15rem;
   margin: 0.15rem;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .service-block > div:first-child {
-  font-size: 0.68rem;
+  font-family: var(--fednet-font-mono);
+  font-size: 0.7rem;
+  /* Homepage's own Block component renders this at font-weight 100
+     (font-thin), which is hard to read at this size — overridden here,
+     not just recolored. */
+  font-weight: 600;
+  color: var(--fednet-text-primary);
 }
 
 .service-block > div:last-child {
   font-size: 0.52rem;
+  color: var(--fednet-text-muted);
+  letter-spacing: 0.04em;
 }
 
-/*
- * The greeting has no element ID in Homepage's actual markup (verified
- * against the rendered page, not guessed) - it's a plain <span> inside
- * .information-widget-greeting. custom.js rewrites this span's text to a
- * time-of-day message; the gradient clip below applies to whatever text
- * ends up there.
- */
-.information-widget-greeting span {
-  font-family: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+/* Set by custom.js from the real rendered CPU percentage — see the
+ * "container CPU highlight" section there for why this can't just be a
+ * Homepage `highlight` config (the auto stats block doesn't wire one
+ * up). */
+.service-block[data-fednet-level="warn"] > div:first-child {
+  color: var(--fednet-warning);
+}
+
+.service-block[data-fednet-level="danger"] > div:first-child {
+  color: var(--fednet-danger);
+}
+
+/* ---------------------------------------------------------------------
+ * Fleet status strip — inserted by custom.js, built entirely from the
+ * ping/docker status dots Homepage already renders (see there for the
+ * exact selectors/colors this reads). No invented data.
+ * ------------------------------------------------------------------- */
+
+#fednet-fleet-status {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  margin: 0 1rem;
+  padding: 0.55rem 1rem;
+  background: var(--fednet-surface);
+  border: 1px solid var(--fednet-border);
+  border-radius: var(--fednet-radius);
+  font-size: 0.72rem;
+  color: var(--fednet-text-secondary);
+}
+
+@media (min-width: 640px) {
+  #fednet-fleet-status {
+    margin: 0 2rem;
+  }
+}
+
+.fednet-fleet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.fednet-fleet-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.fednet-fleet-dot.is-healthy {
+  background: var(--fednet-success);
+}
+
+.fednet-fleet-dot.is-warning {
+  background: var(--fednet-warning);
+}
+
+.fednet-fleet-dot.is-down {
+  background: var(--fednet-danger);
+}
+
+.fednet-fleet-count {
+  font-family: var(--fednet-font-mono);
+  color: var(--fednet-text-primary);
   font-weight: 600;
-  background: linear-gradient(90deg, #f0f9ff, #a5f3fc, #e879f9);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
 }
 
-/*
- * Give the datetime/weather/resource chips in the top info row the same
- * glass-card language as the service tiles below, so the page reads as
- * one system instead of styled cards sitting above plain default text.
- * The greeting is excluded - it's meant to read as a heading, not a chip.
- */
+.fednet-fleet-updated {
+  margin-left: auto;
+  font-family: var(--fednet-font-mono);
+  color: var(--fednet-text-muted);
+}
+
+/* ---------------------------------------------------------------------
+ * Top information bar — greeting, datetime, weather, resources, search
+ * ------------------------------------------------------------------- */
+
+.information-widget-greeting span {
+  font-weight: 600;
+  color: var(--fednet-text-primary);
+}
+
 #widgets-wrap > .widget-container:not(.information-widget-greeting) {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.75rem;
-  padding: 0.35rem 1rem;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 6px 20px rgba(0, 0, 0, 0.3);
+  background: var(--fednet-surface);
+  border: 1px solid var(--fednet-border);
+  border-radius: 0.55rem;
+  padding: 0.35rem 0.9rem;
 }
 
 .information-widget-search input {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #f1f5f9 !important;
+  background: var(--fednet-surface-sunken) !important;
+  border-color: var(--fednet-border) !important;
+  color: var(--fednet-text-primary) !important;
 }
 
 .information-widget-search input::placeholder {
-  color: rgba(241, 245, 249, 0.45);
+  color: var(--fednet-text-muted);
 }
 
 .information-widget-search input:focus {
-  border-color: rgba(34, 211, 238, 0.55) !important;
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+  border-color: var(--fednet-accent) !important;
+  box-shadow: 0 0 0 3px var(--fednet-accent-soft);
+}
+
+/* Host resource bars (CPU/mem/disk) — real host stats. Color escalation
+ * on the fill is applied by custom.js via .is-warning/.is-danger, since
+ * the percentage only exists as an inline `style.width`, not a class. */
+.resource-usage {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.resource-usage > div {
+  background: var(--fednet-accent) !important;
+  transition: width 600ms ease, background-color var(--fednet-transition-fast);
+}
+
+.resource-usage.is-warning > div {
+  background: var(--fednet-warning) !important;
+}
+
+.resource-usage.is-danger > div {
+  background: var(--fednet-danger) !important;
+}
+
+/* ---------------------------------------------------------------------
+ * Accessibility: visible focus rings everywhere (cards, links, inputs,
+ * buttons). Homepage's own focus handling is inconsistent across
+ * components, so this is applied broadly rather than per-selector.
+ * ------------------------------------------------------------------- */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--fednet-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------------------------------------------------------------------
+ * Footer — de-emphasized, matches the rest of the muted chrome instead
+ * of Homepage's default styling.
+ * ------------------------------------------------------------------- */
+
+#footer {
+  color: var(--fednet-text-muted);
 }

@@ -305,15 +305,21 @@ changes without a container restart:
   concept of ports, so `host:port` silently fails to parse), a `container:`
   field for live Docker stats, and a `widget:` block for service-specific
   live data
-- `homepage/settings.yaml` — theme, accent color, header style, card blur,
-  group layout/columns
+- `homepage/settings.yaml` — theme, accent color, header style, group
+  layout/columns
 - `homepage/widgets.yaml` — the info-widget row (greeting, clock, weather,
   resource usage, search bar)
 - `homepage/docker.yaml` — the Docker socket connection (`fednet:`) that
   every service's `container:` field references for live stats
-- `homepage/custom.css` — the dark gradient background, grid texture, and
-  card hover effects layered on top of the theme; auto-included by Homepage,
-  no build step
+- `homepage/custom.css` — the flat dark-graphite design system (see
+  [Theming](#theming)) layered on top of Homepage's own theme; auto-included
+  by Homepage, no build step
+- `homepage/custom.js` — the time-of-day greeting, and a few small
+  enhancements built only from data Homepage already renders: a fleet
+  status strip summarizing the real ping/container-health dots into
+  "N healthy / N need attention", and CPU-usage color escalation on the
+  host resource bars and per-container stat blocks. No polling or state of
+  its own — it reads the DOM Homepage already produces.
 
 **Live widgets** — Portainer, Uptime Kuma, and BambuBuddy's cards show live
 Docker container CPU/memory/status; Pi-hole shows ads blocked today and
@@ -335,14 +341,16 @@ actual secret only ever lives in `.env`, never in a file git tracks.
 
 ## Theming
 
-Homepage's dark-slate/glass aesthetic (`homepage/custom.css`) is
-carried into Grafana and Uptime Kuma's status page too, so the whole
-stack reads as one thing rather than several default-styled tools
-parked behind a dashboard.
+Homepage's design system (`homepage/custom.css`) — a flat dark-graphite
+base, one restrained teal accent, and system fonts rather than a display
+font or a multi-color neon gradient — is carried into Grafana and Uptime
+Kuma's status page too, so the whole stack reads as one product instead of
+several default-styled tools parked behind a dashboard.
 
-**Grafana** — `grafana/custom.css` layers the gradient background and a
-glass treatment onto panels (`[class*="-panel-container"]`) on top of
-Grafana's own dark theme. Auto-applied via `grafana/theme-entrypoint.sh`,
+**Grafana** — `grafana/custom.css` gives panels
+(`[class*="-panel-container"]`) a flat surface fill and a teal hover
+border on top of Grafana's own dark theme. Auto-applied via
+`grafana/theme-entrypoint.sh`,
 which patches Grafana's vendored `index.html` to link the stylesheet at
 container start (idempotent — checks for a marker before patching, so
 restarts don't double-patch).

@@ -1,4 +1,9 @@
-/* fednet theme overrides for Grafana OSS.
+/* fednet theme overrides for Grafana OSS — matches the restrained
+   graphite/single-accent palette in homepage/custom.css (see that file
+   for why: this repo deliberately carries one visual identity across
+   Homepage, Grafana and Uptime Kuma rather than styling Homepage alone
+   and leaving the other two on the old multi-hue neon/glass look).
+
    Grafana's panel-level styling uses Emotion CSS-in-JS with a hashed
    class prefix that changes per build (e.g. css-iwhfbi-panel-container),
    but keeps a stable semantic suffix — targeted here via [class*=] on
@@ -11,26 +16,22 @@
 
 body {
   background:
-    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
-    radial-gradient(circle at 85% 0%, rgba(168, 85, 247, 0.1), transparent 45%),
-    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08), transparent 50%),
-    linear-gradient(180deg, #05070d 0%, #090c14 100%) !important;
+    radial-gradient(ellipse 1200px 700px at 50% -10%, rgba(45, 212, 191, 0.06), transparent 60%),
+    #0a0c10 !important;
   background-attachment: fixed !important;
 }
 
-/* Panels are already transparent (the body gradient already shows
-   through), so this just adds the glass-card treatment: a soft fill,
-   blur, and a slightly brighter border than Grafana's default. */
+/* Flat fill instead of a blur — there's no colorful gradient left behind
+   these panels to blur, so a blur bought nothing but paint cost. Matches
+   Homepage's own card treatment (.service-card in homepage/custom.css). */
 [class*="-panel-container"] {
-  background: rgba(255, 255, 255, 0.03) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: #14181f !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  transition: border-color 160ms ease, transform 160ms ease;
+  transition: border-color 160ms ease;
 }
 
 [class*="-panel-container"]:hover {
-  border-color: rgba(148, 163, 184, 0.2) !important;
+  border-color: rgba(45, 212, 191, 0.4) !important;
 }
 
 /* Left nav and top breadcrumb bar are deliberately left untouched —

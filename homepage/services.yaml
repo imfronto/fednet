@@ -2,7 +2,7 @@
     - Portainer:
         href: http://lab.lan:9000
         ping: lab.lan
-        description: Container management
+        description: Container management · :9000
         icon: portainer.png
         server: fednet
         container: portainer
@@ -15,7 +15,7 @@
     - Uptime Kuma:
         href: http://lab.lan:3001
         ping: lab.lan
-        description: Service monitoring
+        description: Service monitoring · :3001
         icon: uptime-kuma.png
         server: fednet
         container: uptime-kuma
@@ -27,7 +27,7 @@
     - Pi-hole:
         href: http://lab.lan:8081/admin
         ping: lab.lan
-        description: Network-wide ad blocking
+        description: Network-wide ad blocking · :8081
         icon: pi-hole.png
         server: fednet
         container: pihole
@@ -40,7 +40,7 @@
     - Grafana:
         href: http://lab.lan:3000
         ping: lab.lan
-        description: Dashboards
+        description: Dashboards · :3000
         icon: grafana.png
         server: fednet
         container: grafana
@@ -48,7 +48,7 @@
     - Prometheus:
         href: http://lab.lan:9090
         ping: lab.lan
-        description: Metrics
+        description: Metrics · :9090
         icon: prometheus.png
         server: fednet
         container: prometheus
@@ -62,7 +62,7 @@
     - Open WebUI:
         href: http://lab.lan:8082
         ping: lab.lan
-        description: Local AI chat (Ollama)
+        description: Local AI chat (Ollama) · :8082
         icon: ollama.png
         server: fednet
         container: open-webui
@@ -71,7 +71,7 @@
     - Jellyfin:
         href: http://lab.lan:8096
         ping: lab.lan
-        description: Media server
+        description: Media server · :8096
         icon: jellyfin.png
         server: fednet
         container: jellyfin
@@ -86,7 +86,7 @@
     - BambuBuddy:
         href: http://lab.lan:8000
         ping: lab.lan
-        description: Bambu Lab printer dashboard
+        description: Bambu Lab printer dashboard · :8000
         icon: si-bambulab
         server: fednet
         container: bambuddy
