@@ -64,6 +64,7 @@ run it.
 - [Backups](#backups)
 - [Honeypot](#honeypot)
 - [DNS flood detection](#dns-flood-detection)
+- [System resource alerting](#system-resource-alerting)
 - [Hourly Pi-hole stats digest](#hourly-pi-hole-stats-digest)
 - [Troubleshooting](#troubleshooting)
 - [Data & persistence](#data--persistence)
@@ -166,6 +167,7 @@ Then edit `.env`:
 | `HONEYPOT_WEBHOOK_URL` | optional | See [Honeypot](#honeypot) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 | `PIHOLE_FLOOD_WEBHOOK_URL` | optional | See [DNS flood detection](#dns-flood-detection) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 | `PIHOLE_STATS_WEBHOOK_URL` | optional | See [Hourly Pi-hole stats digest](#hourly-pi-hole-stats-digest) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
+| `SYSTEM_WEBHOOK_URL` | optional | See [System resource alerting](#system-resource-alerting) — falls back to `GRAVITY_WEBHOOK_URL` if unset |
 
 ### 3. Start the stack
 
@@ -306,7 +308,13 @@ cAdvisor is scraped by Prometheus but intentionally has no dashboard here:
 on this host's snap-Docker cgroup layout it can only see systemd slices
 (`/system.slice`, `/init.scope`, ...), not individual container cgroups, so
 it can't produce a meaningful per-container breakdown — Portainer and the
-Homepage widgets remain the source for per-container stats.
+Homepage widgets remain the source for per-container stats. The same
+snap-dockerd confinement also broke node-exporter's disk-usage metrics at
+first (bare `/` as a bind-mount source silently resolves to a small fake
+filesystem instead of the real one) — fixed by pointing its rootfs mount
+at the same real path cadvisor already uses; see the comment on
+node-exporter's `volumes:` in `services/monitoring.yml` if a future image
+upgrade ever needs re-diagnosing.
 
 ## Dashboard customization
 
@@ -692,6 +700,30 @@ every household's actual baseline traffic. Tune
 everything else, with a 30-minute cooldown
 (`PIHOLE_FLOOD_COOLDOWN_SECONDS`) between repeat alerts of the same
 kind.
+
+## System resource alerting
+
+`system-watchdog` polls Prometheus (which already scrapes `node-exporter`,
+no new scraping needed) every 60 seconds for three host-level signals:
+
+- **CPU usage** — busy percentage averaged across all cores
+- **Disk usage** — percent used on `/`. `/boot` is a real, separate
+  partition too, but node-exporter can't report it accurately on this
+  host (see the node-exporter volumes comment in
+  `services/monitoring.yml`) so it isn't monitored here
+- **CPU package temperature** — the higher of the two CPU packages'
+  thermal zones
+
+Defaults (90% CPU, 90% disk, 80°C) deliberately match the red threshold
+steps on the Grafana **Server Overview** dashboard
+(`grafana/provisioning/dashboards/server-overview.json`), so a panel
+going red and an alert firing are the same event unless you tune one but
+not the other. Tune `SYSTEM_CPU_THRESHOLD` / `SYSTEM_DISK_THRESHOLD` /
+`SYSTEM_TEMP_THRESHOLD` in `.env` if your hardware runs hotter or fuller
+than that under normal load. Alerts go to `SYSTEM_WEBHOOK_URL`, falling
+back to `GRAVITY_WEBHOOK_URL` like everything else, with a 30-minute
+cooldown (`SYSTEM_WATCHDOG_COOLDOWN_SECONDS`) between repeat alerts of the
+same kind.
 
 ## Hourly Pi-hole stats digest
 

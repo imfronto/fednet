@@ -384,7 +384,24 @@ services:
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      - /:/rootfs:ro
+      # NOT `/:/rootfs:ro` — on this host's snap-confined dockerd, bare
+      # `/` as a bind-mount source silently resolves to a small synthetic
+      # filesystem (confirmed: `docker run -v /:/x alpine df -h /x` shows
+      # a ~7.5G "none" filesystem, 0 used, not the real 3.6T root), so
+      # node_filesystem_* metrics for mountpoint="/" were wrong (a fake
+      # ~8G total) rather than absent — the dangerous kind of wrong for
+      # an alert, since it silently caps out near-empty instead of ever
+      # reading high. `/var/snap/docker/common/var-lib-docker` is on the
+      # exact same device (`/dev/mapper/ubuntu--vg-ubuntu--lv`, confirmed
+      # via `df`) and — like cadvisor's identical mount just above —
+      # bind-mounts correctly under the same confinement, so it stands in
+      # for the real root here. This does NOT fix `/boot` (a separate
+      # device, /dev/sda2): its statfs now resolves to a nonexistent
+      # `boot/` subdirectory under this path and is simply absent from
+      # scraped metrics rather than reported wrong — not tracked anywhere
+      # in this stack as a result (server-overview.json and
+      # system_watchdog.sh both scope disk checks to mountpoint="/" only).
+      - /var/snap/docker/common/var-lib-docker:/rootfs:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
@@ -406,6 +423,51 @@ services:
       resources:
         limits:
           memory: 128M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  system-watchdog:
+    build: ./watchdog-base
+    image: fednet/watchdog-base:1
+    container_name: system-watchdog
+    restart: unless-stopped
+    networks: [edge]
+    entrypoint: ["/bin/sh", "/system_watchdog.sh"]
+    environment:
+      # Resolved inside the script itself (same reason as the other
+      # watchdogs): Compose's interpolation doesn't support nesting a
+      # second ${VAR} inside a :- default.
+      - SYSTEM_WEBHOOK_URL=${SYSTEM_WEBHOOK_URL:-}
+      - GRAVITY_WEBHOOK_URL=${GRAVITY_WEBHOOK_URL:?set GRAVITY_WEBHOOK_URL in .env}
+      - SYSTEM_CPU_THRESHOLD=${SYSTEM_CPU_THRESHOLD:-90}
+      - SYSTEM_DISK_THRESHOLD=${SYSTEM_DISK_THRESHOLD:-90}
+      - SYSTEM_TEMP_THRESHOLD=${SYSTEM_TEMP_THRESHOLD:-80}
+      - SYSTEM_WATCHDOG_COOLDOWN_SECONDS=${SYSTEM_WATCHDOG_COOLDOWN_SECONDS:-1800}
+      - CHECK_INTERVAL_SECONDS=60
+    volumes:
+      - ./scripts/system_watchdog.sh:/system_watchdog.sh:ro
+    depends_on:
+      - prometheus
+    # Queries Prometheus and posts webhooks — no local writes, no
+    # privileged ports, no reason to be root or hold any capability.
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    read_only: true
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "system_watchdog.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
           cpus: "0.25"
     logging:
       driver: json-file
