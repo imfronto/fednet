@@ -293,7 +293,20 @@ chown -R 10001:10001 /data`.
 `services/monitoring.yml`), so dashboards and metric history survive
 redeploys. `make down` never removes external volumes, but they also won't
 show up if you inspect this project alone — they aren't created by
-anything here.
+anything here. Grafana auto-provisions two datasources
+(`grafana/provisioning/datasources/`) — Prometheus (default) and Loki — and
+two dashboards (`grafana/provisioning/dashboards/`): **Honeypot** (probe
+activity from Loki) and **Server Overview** (host CPU/memory/disk/network/
+temperature from node-exporter — CPU busy, memory, disk usage, load
+average, package temperature, and uptime, plus timeseries detail for each).
+New/changed dashboard JSON is picked up automatically within 30s
+(`updateIntervalSeconds` in `dashboards.yml`); a new or edited *datasource*
+needs `docker restart grafana`, since those are only read at startup.
+cAdvisor is scraped by Prometheus but intentionally has no dashboard here:
+on this host's snap-Docker cgroup layout it can only see systemd slices
+(`/system.slice`, `/init.scope`, ...), not individual container cgroups, so
+it can't produce a meaningful per-container breakdown — Portainer and the
+Homepage widgets remain the source for per-container stats.
 
 ## Dashboard customization
 
