@@ -6,7 +6,7 @@ set -eu
 SYSTEM_WEBHOOK_URL="${SYSTEM_WEBHOOK_URL:-}"
 GRAVITY_WEBHOOK_URL="${GRAVITY_WEBHOOK_URL:-}"
 WEBHOOK_URL="${SYSTEM_WEBHOOK_URL:-$GRAVITY_WEBHOOK_URL}"
-CPU_THRESHOLD="${SYSTEM_CPU_THRESHOLD:-90}"
+CPU_THRESHOLD="${SYSTEM_CPU_THRESHOLD:-45}"
 DISK_THRESHOLD="${SYSTEM_DISK_THRESHOLD:-90}"
 TEMP_THRESHOLD="${SYSTEM_TEMP_THRESHOLD:-80}"
 CHECK_INTERVAL_SECONDS="${CHECK_INTERVAL_SECONDS:-60}"
@@ -18,7 +18,7 @@ PROM_URL="http://prometheus:9090"
 # `-ge` comparisons below silently and permanently false (no error, no
 # crash — that check just never fires again); a non-numeric
 # CHECK_INTERVAL_SECONDS would crash-loop the container via `sleep`.
-case "$CPU_THRESHOLD" in ''|*[!0-9]*) echo "invalid SYSTEM_CPU_THRESHOLD '$CPU_THRESHOLD', using default 90" >&2; CPU_THRESHOLD=90 ;; esac
+case "$CPU_THRESHOLD" in ''|*[!0-9]*) echo "invalid SYSTEM_CPU_THRESHOLD '$CPU_THRESHOLD', using default 45" >&2; CPU_THRESHOLD=45 ;; esac
 case "$DISK_THRESHOLD" in ''|*[!0-9]*) echo "invalid SYSTEM_DISK_THRESHOLD '$DISK_THRESHOLD', using default 90" >&2; DISK_THRESHOLD=90 ;; esac
 case "$TEMP_THRESHOLD" in ''|*[!0-9]*) echo "invalid SYSTEM_TEMP_THRESHOLD '$TEMP_THRESHOLD', using default 80" >&2; TEMP_THRESHOLD=80 ;; esac
 case "$CHECK_INTERVAL_SECONDS" in ''|*[!0-9]*|0) echo "invalid CHECK_INTERVAL_SECONDS '$CHECK_INTERVAL_SECONDS', using default 60" >&2; CHECK_INTERVAL_SECONDS=60 ;; esac

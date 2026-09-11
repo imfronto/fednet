@@ -714,11 +714,12 @@ no new scraping needed) every 60 seconds for three host-level signals:
 - **CPU package temperature** — the higher of the two CPU packages'
   thermal zones
 
-Defaults (90% CPU, 90% disk, 80°C) deliberately match the red threshold
-steps on the Grafana **Server Overview** dashboard
-(`grafana/provisioning/dashboards/server-overview.json`), so a panel
-going red and an alert firing are the same event unless you tune one but
-not the other. Tune `SYSTEM_CPU_THRESHOLD` / `SYSTEM_DISK_THRESHOLD` /
+Defaults are 45% CPU, 90% disk, and 80°C. Disk and temperature still match
+the red threshold steps on the Grafana **Server Overview** dashboard
+(`grafana/provisioning/dashboards/server-overview.json`); CPU is
+intentionally more sensitive than that dashboard's 90% red step, so the
+dashboard panel and the alert no longer go red/fire at the same instant
+for CPU specifically. Tune `SYSTEM_CPU_THRESHOLD` / `SYSTEM_DISK_THRESHOLD` /
 `SYSTEM_TEMP_THRESHOLD` in `.env` if your hardware runs hotter or fuller
 than that under normal load. Alerts go to `SYSTEM_WEBHOOK_URL`, falling
 back to `GRAVITY_WEBHOOK_URL` like everything else, with a 30-minute
