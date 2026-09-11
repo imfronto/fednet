@@ -31,8 +31,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "orange", "value": 70 },
-              { "color": "red", "value": 90 }
+              { "color": "orange", "value": 30 },
+              { "color": "red", "value": 45 }
             ]
           }
         },
@@ -173,13 +173,13 @@
     },
     {
       "id": 7,
-      "title": "CPU usage by mode",
+      "title": "CPU busy by mode",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "avg by (mode) (rate(node_cpu_seconds_total[5m])) * 100",
+          "expr": "avg by (mode) (rate(node_cpu_seconds_total{mode!=\"idle\"}[5m])) * 100",
           "refId": "A",
           "legendFormat": "{{mode}}"
         }
