@@ -42,6 +42,8 @@ run it.
 - **Local AI chat** — Ollama + Open WebUI for a self-hosted,
   nothing-leaves-the-LAN alternative to a hosted AI chat product
 - **Media server** — Jellyfin, on the same dashboard as everything else
+- **Rack status display** — a Raspberry Pi kiosk showing live Grafana stats
+  24/7, no laptop needed to check on the host
 
 ## Table of contents
 
@@ -61,6 +63,7 @@ run it.
 - [Commands](#commands)
 - [Local AI chat (Ollama + Open WebUI)](#local-ai-chat-ollama--open-webui)
 - [Jellyfin](#jellyfin)
+- [Rack status display](#rack-status-display)
 - [Backups](#backups)
 - [Honeypot](#honeypot)
 - [DNS flood detection](#dns-flood-detection)
@@ -509,6 +512,28 @@ Switch `services/jellyfin.yml` to `network_mode: host` (dropping the
 `ports:`/`networks:` lines, same trade BambuBuddy makes for SSDP) if
 auto-discovery matters more to you than staying consistent with the rest
 of the stack's networking.
+
+## Rack status display
+
+A dedicated Raspberry Pi mounted in the rack, running a fullscreen
+Chromium kiosk pointed at Grafana, so host and honeypot stats are visible
+at a glance without opening a laptop. See
+[docs/rack-display.md](docs/rack-display.md) for the hardware shopping
+list and setup steps — `scripts/rack_display_kiosk.sh` does the actual Pi
+provisioning (X11 + Chromium kiosk, autologin, crash/nightly
+auto-restart).
+
+It rotates through a Grafana **"Rack Display"** playlist (Server Overview
+→ Honeypot, 1-minute interval) rather than pinning one dashboard, created
+via the Playlists API rather than a provisioning file — unlike dashboards
+and datasources, Grafana has no file-based provisioning for playlists, so
+it only exists in the `pihole_grafana_data` volume's database. If that
+volume is ever recreated from scratch, redo it via **Dashboards →
+Playlists** in the UI, or `POST /api/playlists`. The dashboard is
+login-protected like the rest of Grafana, so the kiosk needs one of: a
+Grafana **Public dashboard** link, anonymous Viewer access, or a one-time
+on-screen login — see the TODO block at the top of
+`scripts/rack_display_kiosk.sh` for the trade-offs between them.
 
 ## Backups
 
