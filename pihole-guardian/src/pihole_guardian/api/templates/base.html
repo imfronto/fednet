@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Pi-hole Guardian{% endblock %}</title>
+  <title>{% block title %}Pi Guard{% endblock %}</title>
   <style>
     :root { color-scheme: light dark; }
     body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: #0f1115; color: #e6e6e6; }
@@ -42,7 +42,7 @@
 </head>
 <body>
   <header>
-    <div class="brand">🛡️ Pi-hole Guardian</div>
+    <div class="brand">🛡️ Pi Guard</div>
     <nav>
       <a href="/" class="{{ 'active' if active_tab == 'dashboard' else '' }}">Domains</a>
       <a href="/review" class="{{ 'active' if active_tab == 'review' else '' }}">Review</a>

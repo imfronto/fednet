@@ -26,7 +26,7 @@ from pihole_guardian.logging_utils import configure_logging
 from pihole_guardian.piholeclient.exceptions import PiholeError, UnsafeOperationRefused
 from pihole_guardian.scheduler.jobs import decide_and_maybe_apply, revalidate_job
 
-app = typer.Typer(help="Pi-hole Guardian — safety-first automated blocklist maintenance.", no_args_is_help=True)
+app = typer.Typer(help="Pi Guard — safety-first automated Pi-hole blocklist maintenance.", no_args_is_help=True)
 
 
 def _echo_err(msg: str) -> None:

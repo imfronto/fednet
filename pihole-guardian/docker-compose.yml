@@ -1,0 +1,51 @@
+# Standalone Pi Guard deployment — for running this against your own
+# Pi-hole, independent of any particular homelab stack. If you're adding
+# this to the fednet homelab instead, use services/pihole-guardian.yml at
+# the repo root (via `make up`) rather than this file — the two aren't
+# meant to be used together.
+#
+# Quick start:
+#   python3 setup_wizard.py   # writes .env
+#   docker compose build
+#   docker compose up -d
+services:
+  pihole-guardian:
+    build: .
+    container_name: pi-guard
+    restart: unless-stopped
+    env_file: .env
+    # Lets GUARDIAN_PIHOLE_URL be something like http://host.docker.internal:80
+    # if your Pi-hole runs directly on this host rather than in a container.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/data/pihole-guardian
+    # Bound to localhost only by default — safest starting point for a
+    # standalone deployment with no reverse proxy in front of it. Widen to
+    # "0.0.0.0:8930:8930" (or your LAN interface) once you're ready to reach
+    # the dashboard from other devices, and see README.md's security notes
+    # before ever exposing it beyond your own LAN.
+    ports:
+      - "127.0.0.1:8930:8930"
+    user: "10001:10001"
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8930/api/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

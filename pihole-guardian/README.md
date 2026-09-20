@@ -1,12 +1,45 @@
-# Pi-hole Guardian
+# Pi Guard
 
 A safety-first service that watches DNS queries observed by Pi-hole, checks
 domains against multiple independent reputation sources, and maintains a
 *separate, clearly-labeled* automatic blocklist — without ever touching
-domains you manage yourself. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-for the full design rationale, database schema, threat model, and decision
-algorithm; this file is the operational reference (setup, configuration,
-CLI, API, testing, rollback, deployment).
+domains you manage yourself. (Technical package/repo name is
+`pihole-guardian`/`pihole_guardian` — "Pi Guard" is the product name used
+everywhere user-facing: the dashboard, the CLI banner, this doc.)
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design
+rationale, database schema, threat model, and decision algorithm; this file
+is the operational reference (setup, configuration, CLI, API, testing,
+rollback, deployment).
+
+## Setting this up on your own (not the fednet homelab)
+
+If you just want to point this at your own Pi-hole — not integrate it into
+this specific homelab repo — everything you need is self-contained in this
+`pihole-guardian/` folder:
+
+```
+cd pihole-guardian
+./setup.sh          # interactive terminal wizard — writes .env, tests your
+                     # Pi-hole connection live, no dependencies beyond python3
+docker compose build
+docker compose up -d
+```
+
+The wizard (`setup_wizard.py`) is a single zero-dependency Python script —
+it runs with a bare `python3`, before you've installed anything or built
+any image, so anyone can clone this folder and have a working `.env` in a
+couple of minutes. It walks through: your Pi-hole URL and password (with a
+live connection test), dashboard credentials (offers to generate a short
+one for you), the operating mode (defaults to the safest, `AUDIT`), and a
+couple of optional extras. Run it again any time to regenerate `.env` — it
+backs up the old one first.
+
+The `docker-compose.yml` in this folder is the standalone deployment (binds
+the dashboard to `127.0.0.1:8930` only, by default) — it's separate from
+`services/pihole-guardian.yml` at the repo root, which is what the fednet
+homelab itself uses via `make up`. Don't run both against the same Pi-hole
+at once.
 
 **The default mode is `AUDIT`: it observes and classifies but changes
 nothing in Pi-hole until you deliberately raise the mode.** Read "Operating
@@ -14,7 +47,8 @@ modes" below before doing that.
 
 ## Contents
 
-- [Quick start](#quick-start)
+- [Setting this up on your own](#setting-this-up-on-your-own-not-the-fednet-homelab)
+- [Quick start (fednet homelab integration)](#quick-start-fednet-homelab-integration)
 - [Operating modes](#operating-modes)
 - [Configuration reference](#configuration-reference)
 - [CLI reference](#cli-reference)
@@ -27,10 +61,11 @@ modes" below before doing that.
 - [Upgrading](#upgrading)
 - [Known limitations / assumptions](#known-limitations--assumptions)
 
-## Quick start
+## Quick start (fednet homelab integration)
 
-This service lives inside the `homelab` repo and follows its conventions —
-see the root `README.md`'s "Adding a new service" section.
+This is the other way to run it: integrated into this specific `homelab`
+repo's stack rather than standalone (see above). It follows the repo's own
+conventions — see the root `README.md`'s "Adding a new service" section.
 
 1. Create the data directory and give it to the container's fixed non-root
    UID (Docker would otherwise create it as root-owned on first `up`, which

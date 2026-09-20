@@ -25,7 +25,7 @@ def create_app(ctx: AppContext, on_shutdown: Callable[[], None] | None = None) -
         if on_shutdown:
             on_shutdown()
 
-    app = FastAPI(title="Pi-hole Guardian", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Pi Guard", version="0.1.0", lifespan=lifespan)
     app.add_middleware(RateLimitMiddleware, requests_per_minute=ctx.settings.rate_limit_per_minute)
     app.include_router(build_api_router(ctx), prefix="/api")
     app.include_router(build_dashboard_router(ctx))
