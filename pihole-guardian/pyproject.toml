@@ -34,7 +34,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pihole_guardian = ["db/migrations/*.sql", "resources/*.yml"]
+pihole_guardian = ["db/migrations/*.sql", "resources/*.yml", "api/templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
