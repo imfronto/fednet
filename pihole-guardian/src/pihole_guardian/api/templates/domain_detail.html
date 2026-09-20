@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ report.domain.domain }} — Pi-hole Guardian{% endblock %}
+{% block content %}
+  <p><a href="/">&larr; back to domains</a></p>
+  <h2>{{ report.domain.domain }}</h2>
+  <p>
+    Status: <span class="badge {{ report.domain.pihole_status }}">{{ report.domain.pihole_status }}</span>
+    {% if report.domain.pihole_list_managed_by %}<span class="muted">managed by {{ report.domain.pihole_list_managed_by }}</span>{% endif %}
+    {% if report.is_protected %}<span class="badge legitimate_infrastructure">protected: {{ report.protected_reason }}</span>{% endif %}
+  </p>
+  <p class="muted">First seen {{ report.domain.first_seen }} · Last seen {{ report.domain.last_seen }} · {{ report.domain.query_count }} queries observed</p>
+
+  <div class="card">
+    <h3>Classification</h3>
+    {% if report.classification %}
+      <p><span class="badge {{ report.classification.category }}">{{ report.classification.category }}</span>
+         confidence {{ "%.0f"|format(report.classification.confidence * 100) }}%
+         {% if report.classification.conflict %}<span class="badge advertising_tracking">conflicting evidence</span>{% endif %}</p>
+      <p>{{ report.classification.reasoning }}</p>
+      <strong>Malicious/negative signals</strong>
+      <ul class="evidence-list">
+        {% for s in report.classification.malicious_signals %}<li>{{ s }}</li>{% else %}<li class="muted">none</li>{% endfor %}
+      </ul>
+      <strong>Legitimate-service indicators</strong>
+      <ul class="evidence-list">
+        {% for s in report.classification.legitimate_signals %}<li>{{ s }}</li>{% else %}<li class="muted">none found</li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Not yet classified.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Decision</h3>
+    {% if report.decision %}
+      <p><strong>{{ report.decision.action }}</strong> — status: {{ report.decision.status }} — mode at the time: {{ report.decision.mode }}</p>
+      <p>{{ report.decision.reason }}</p>
+    {% else %}
+      <p class="muted">No decision recorded yet.</p>
+    {% endif %}
+  </div>
+
+  {% if report.open_incidents %}
+  <div class="card">
+    <h3>Open incidents</h3>
+    {% for i in report.open_incidents %}
+      <p>Possible disruption detected {{ i.created_at }} — <a href="/incidents">review</a></p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>Override</h3>
+    <form class="inline" method="post" action="/domains/{{ report.domain.domain }}/block">
+      <input type="text" name="reason" placeholder="Reason (optional)">
+      <button type="submit" class="danger">Block now</button>
+    </form>
+    <form class="inline" method="post" action="/domains/{{ report.domain.domain }}/allow">
+      <input type="text" name="reason" placeholder="Reason (optional)">
+      <button type="submit" class="primary">Allow &amp; protect</button>
+    </form>
+    <form class="inline" method="post" action="/domains/{{ report.domain.domain }}/verify">
+      <button type="submit">Re-check now</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Evidence</h3>
+    <table>
+      <thead><tr><th>Source</th><th>Verdict</th><th>Weight</th><th>Detail</th><th>Observed</th></tr></thead>
+      <tbody>
+        {% for e in report.evidence %}
+        <tr><td>{{ e.source }}</td><td>{{ e.verdict }}</td><td>{{ "%.2f"|format(e.weight) }}</td><td>{{ e.detail }}</td><td class="muted">{{ e.observed_at }}</td></tr>
+        {% else %}
+        <tr><td colspan="5" class="muted">No evidence recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Recent changes</h3>
+    <table>
+      <thead><tr><th>Change ID</th><th>Type</th><th>Applied</th><th>Actor</th><th>When</th><th></th></tr></thead>
+      <tbody>
+        {% for c in report.recent_changes %}
+        <tr>
+          <td><code>{{ c.id }}</code></td><td>{{ c.change_type }}</td>
+          <td>{{ 'simulated' if c.simulated else (c.applied and 'yes' or 'no') }}</td>
+          <td>{{ c.actor }}</td><td class="muted">{{ c.created_at }}</td>
+          <td>
+            {% if c.applied and not c.rolled_back and not c.simulated %}
+            <form class="inline" method="post" action="/changes/{{ c.id }}/rollback">
+              <button type="submit" class="danger">Rollback</button>
+            </form>
+            {% elif c.rolled_back %}<span class="muted">rolled back</span>{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">No changes recorded for this domain.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

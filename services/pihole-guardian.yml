@@ -1,0 +1,57 @@
+networks:
+  edge:
+    external: true
+
+services:
+  pihole-guardian:
+    build: ./pihole-guardian
+    container_name: pihole-guardian
+    restart: unless-stopped
+    networks: [edge]
+    depends_on:
+      - pihole
+    environment:
+      - TZ=${TZ:-UTC}
+      - GUARDIAN_PIHOLE_URL=http://pihole:80
+      # Reuses the same Pi-hole admin password already required by
+      # services/pihole.yml — never store this secret in two places.
+      - GUARDIAN_PIHOLE_PASSWORD=${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+      - GUARDIAN_MODE=${GUARDIAN_MODE:-AUDIT}
+      - GUARDIAN_DASHBOARD_USERNAME=${GUARDIAN_DASHBOARD_USERNAME:-admin}
+      - GUARDIAN_DASHBOARD_PASSWORD=${GUARDIAN_DASHBOARD_PASSWORD:?set GUARDIAN_DASHBOARD_PASSWORD in .env}
+      - GUARDIAN_API_TOKEN=${GUARDIAN_API_TOKEN:?set GUARDIAN_API_TOKEN in .env}
+      - GUARDIAN_VIRUSTOTAL_API_KEY=${GUARDIAN_VIRUSTOTAL_API_KEY:-}
+      - GUARDIAN_CLIENT_TRACKING_ENABLED=${GUARDIAN_CLIENT_TRACKING_ENABLED:-false}
+      - GUARDIAN_CLIENT_HASH_SALT=${GUARDIAN_CLIENT_HASH_SALT:-}
+      - GUARDIAN_LOG_LEVEL=${GUARDIAN_LOG_LEVEL:-INFO}
+    volumes:
+      - ./data/pihole-guardian:/data/pihole-guardian
+    # Dashboard/API port intentionally NOT published to the host by default
+    # (requirement #16: never expose this directly to the internet). Uncomment
+    # to reach it from the LAN directly during initial setup; once comfortable,
+    # prefer routing it through Caddy with its own auth in front instead — see
+    # pihole-guardian/docs/CONFIGURATION.md "Exposing the dashboard".
+    # ports:
+    #   - "127.0.0.1:8930:8930"
+    user: "10001:10001"
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8930/api/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

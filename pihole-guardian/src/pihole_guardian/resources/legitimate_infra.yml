@@ -1,0 +1,103 @@
+# Curated legitimate-infrastructure domains, grouped by the category
+# requirement #4 enumerates. This is evidence AGAINST automatic blocking —
+# matching an entry here (exact match or subdomain of it) sets a hard
+# protection flag in the decision engine, regardless of any other evidence.
+#
+# Deliberately conservative: entries are domains that would cause real
+# device/service breakage if blocked, not "domains I like." Deliberately
+# NOT exhaustive: this is a starting set, meant to be extended locally via
+# the protected-domains file (config/protected_domains.yml) rather than
+# grown indefinitely here. Do not add entire cloud-provider apex domains
+# (amazonaws.com, googleusercontent.com, etc.) — those host both legitimate
+# infra AND plenty of malicious/tracking content on the same domain, so a
+# blanket match would defeat the point of blocking anything hosted there.
+
+operating_system:
+  - windowsupdate.com
+  - update.microsoft.com
+  - apple.com
+  - swcdn.apple.com
+  - mesu.apple.com
+  - gvt1.com          # Google/ChromeOS update infrastructure
+  - android.com
+
+package_managers:
+  - pypi.org
+  - files.pythonhosted.org
+  - npmjs.org
+  - registry.npmjs.org
+  - deb.debian.org
+  - archive.ubuntu.com
+  - security.ubuntu.com
+  - rubygems.org
+  - crates.io
+  - docker.io
+  - registry-1.docker.io
+  - ghcr.io
+  - github.com
+  - raw.githubusercontent.com
+  - objects.githubusercontent.com
+
+authentication_providers:
+  - login.microsoftonline.com
+  - login.live.com
+  - accounts.google.com
+  - appleid.apple.com
+  - okta.com
+  - auth0.com
+  - login.yahoo.com
+
+certificate_infrastructure:
+  - letsencrypt.org
+  - r3.o.lencr.org
+  - ocsp.digicert.com
+  - crl.identrust.com
+  - ocsp.sectigo.com
+
+ntp_time_services:
+  - pool.ntp.org
+  - time.windows.com
+  - time.apple.com
+  - time.google.com
+  - time.cloudflare.com
+
+dns_infrastructure:
+  - root-servers.net
+  - dns.google
+  - one.one.one.one
+  - cloudflare-dns.com
+
+email_services:
+  - outlook.office365.com
+  - smtp.gmail.com
+  - imap.gmail.com
+  - mail.protonmail.com
+
+security_software:
+  - update.avast.com
+  - definitionupdates.microsoft.com
+  - sophosxl.net
+
+smart_home:
+  - device-metrics-us.amazon.com   # excluded deliberately narrow — metrics-only
+  - api.smartthings.com
+  - my.home-assistant.io
+  - meethue.com
+
+streaming_services:
+  - netflix.com
+  - nflxvideo.net
+  - primevideo.com
+  - spotify.com
+
+gaming_services:
+  - steampowered.com
+  - steamcontent.com
+  - xboxlive.com
+  - playstation.net
+
+work_applications:
+  - zoom.us
+  - slack.com
+  - atlassian.net
+  - teams.microsoft.com

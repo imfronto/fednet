@@ -69,6 +69,7 @@ run it.
 - [DNS flood detection](#dns-flood-detection)
 - [System resource alerting](#system-resource-alerting)
 - [Hourly Pi-hole stats digest](#hourly-pi-hole-stats-digest)
+- [Pi-hole Guardian](#pi-hole-guardian)
 - [Troubleshooting](#troubleshooting)
 - [Data & persistence](#data--persistence)
 
@@ -801,6 +802,27 @@ defeating the entire point without any obvious error. Caught by
 literally testing a connection before calling it done, not by reading
 the port list and assuming it worked. Isolation here comes from *which*
 network it's on, not from `internal: true`.
+
+## Pi-hole Guardian
+
+`pihole-guardian` (`services/pihole-guardian.yml`, source in
+`pihole-guardian/`) is a separate service that watches Pi-hole's query log,
+checks domains against several independent reputation sources, and
+maintains its own clearly-labeled automatic denylist entries — distinct
+from anything you or Pi-hole's default lists manage — with a full
+rollback ledger for every change it makes.
+
+It starts in `AUDIT` mode (observes and classifies, changes nothing) and
+requires two secrets with no default: `GUARDIAN_DASHBOARD_PASSWORD` and
+`GUARDIAN_API_TOKEN` in `.env`. It never modifies a domain-list entry it
+didn't add itself, never auto-blocks anything on your `protected_domains`
+list or the bundled legitimate-infrastructure list regardless of evidence,
+and requires at least two independent corroborating sources before a block
+is even eligible to happen automatically. See
+[`pihole-guardian/README.md`](pihole-guardian/README.md) for the full
+setup guide, CLI/API reference, and
+[`pihole-guardian/docs/ARCHITECTURE.md`](pihole-guardian/docs/ARCHITECTURE.md)
+for the design rationale and threat model.
 
 ## Troubleshooting
 

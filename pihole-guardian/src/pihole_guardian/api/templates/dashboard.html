@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Domains — Pi-hole Guardian{% endblock %}
+{% block content %}
+  <div class="stat-row">
+    <div class="stat"><div class="value">{{ status.domains_total }}</div><div class="label">Domains observed</div></div>
+    <div class="stat"><div class="value">{{ status.auto_managed_count }}</div><div class="label">Auto-managed</div></div>
+    <div class="stat"><div class="value">{{ status.pending_decisions }}</div><div class="label">Pending review</div></div>
+    <div class="stat"><div class="value">{{ status.open_incidents }}</div><div class="label">Open incidents</div></div>
+    <div class="stat"><div class="value">{{ 'yes' if status.pihole_reachable else 'NO' }}</div><div class="label">Pi-hole reachable</div></div>
+  </div>
+
+  <form method="get" action="/" style="margin: 1rem 0;">
+    <input type="text" name="q" placeholder="Search domain…" value="{{ query or '' }}">
+    <input type="hidden" name="filter" value="{{ filter_name }}">
+    <button type="submit">Search</button>
+  </form>
+
+  <div class="filters">
+    {% for f in filters %}
+      <a href="/?filter={{ f }}" class="{{ 'active' if f == filter_name else '' }}">{{ f.replace('_', ' ')|title }}</a>
+    {% endfor %}
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Domain</th><th>Pi-hole status</th><th>Classification</th><th>Confidence</th><th>Decision</th><th>Queries</th><th>Last seen</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><a href="/domains/{{ row.domain }}">{{ row.domain }}</a></td>
+        <td><span class="badge {{ row.pihole_status }}">{{ row.pihole_status }}</span>
+            {% if row.managed_by %}<span class="muted">({{ row.managed_by }})</span>{% endif %}</td>
+        <td><span class="badge {{ row.category }}">{{ row.category }}</span></td>
+        <td>{{ "%.0f"|format(row.confidence * 100) }}%</td>
+        <td>{% if row.decision_action %}{{ row.decision_action }} <span class="muted">({{ row.decision_status }})</span>{% endif %}</td>
+        <td>{{ row.query_count }}</td>
+        <td class="muted">{{ row.last_seen }}</td>
+        <td><a href="/domains/{{ row.domain }}">explain</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">No domains match this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

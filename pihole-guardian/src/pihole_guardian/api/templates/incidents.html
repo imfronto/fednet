@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Incidents — Pi-hole Guardian{% endblock %}
+{% block content %}
+  <h2>Service-disruption incidents</h2>
+  <p class="muted">DNS telemetry alone cannot prove an application outage — these are correlational possible-disruption signals for human review, not confirmed causes. See docs/ARCHITECTURE.md.</p>
+  <table>
+    <thead><tr><th>Domain</th><th>Status</th><th>Auto-unblocked</th><th>Evidence</th><th>When</th><th></th></tr></thead>
+    <tbody>
+      {% for i in incidents %}
+      <tr>
+        <td><a href="/domains/{{ i.domain }}">{{ i.domain }}</a></td>
+        <td>{{ i.status }}</td>
+        <td>{{ 'yes' if i.auto_unblocked else 'no' }}</td>
+        <td class="muted">{{ i.evidence }}</td>
+        <td class="muted">{{ i.created_at }}</td>
+        <td>
+          {% if i.status == 'open' %}
+          <form class="inline" method="post" action="/incidents/{{ i.id }}/resolve"><button type="submit">Mark reviewed</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No incidents recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

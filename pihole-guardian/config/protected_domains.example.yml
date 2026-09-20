@@ -1,0 +1,30 @@
+# Copy this file to ./data/pihole-guardian/protected_domains.yml (the path
+# GUARDIAN_PROTECTED_DOMAINS_PATH points at by default) and edit it for your
+# network. It is re-read (and its entries re-applied) on every restart —
+# see safety/protected_list.py's seed_from_file for exactly how.
+#
+# match_type:
+#   exact    - protects only this literal domain
+#   parent   - protects this domain AND every subdomain of it
+#   wildcard - protects only subdomains (not the bare apex)
+#
+# A bare string entry (no pattern/match_type/reason) is shorthand for
+# match_type: exact with no recorded reason.
+#
+# Do not add entire cloud-provider domains here (e.g. amazonaws.com) unless
+# you have a specific, strong reason — see docs/CONFIGURATION.md.
+
+protected:
+  - pattern: microsoft.com
+    match_type: parent
+    reason: Windows Update, authentication, and Office 365 infrastructure
+
+  - pattern: apple.com
+    match_type: parent
+    reason: iOS/macOS updates and iCloud
+
+  - pattern: google.com
+    match_type: parent
+    reason: Android/ChromeOS infrastructure and widely-depended-upon services
+
+  - example-critical-service.com

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Review — Pi-hole Guardian{% endblock %}
+{% block content %}
+  <h2>Pending recommendations</h2>
+  <p class="muted">These decisions are waiting for explicit approval before anything changes in Pi-hole (RECOMMEND mode, or an ENFORCE decision that didn't clear the automatic-apply bar).</p>
+  <table>
+    <thead><tr><th>Domain</th><th>Action</th><th>Confidence</th><th>Reason</th><th></th></tr></thead>
+    <tbody>
+      {% for d in decisions %}
+      <tr>
+        <td><a href="/domains/{{ d.domain }}">{{ d.domain }}</a></td>
+        <td><span class="badge pending">{{ d.action }}</span></td>
+        <td>{{ "%.0f"|format(d.confidence * 100) }}%</td>
+        <td class="muted">{{ d.reason }}</td>
+        <td>
+          <form class="inline" method="post" action="/review/{{ d.id }}/approve"><button class="primary" type="submit">Approve</button></form>
+          <form class="inline" method="post" action="/review/{{ d.id }}/reject"><button class="danger" type="submit">Reject</button></form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">Nothing pending review.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

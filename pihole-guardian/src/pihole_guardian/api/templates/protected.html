@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Protected domains — Pi-hole Guardian{% endblock %}
+{% block content %}
+  <h2>Protected domains</h2>
+  <p class="muted">These are never eligible for automatic blocking, regardless of any evidence found.</p>
+  <table>
+    <thead><tr><th>Pattern</th><th>Match type</th><th>Reason</th><th>Source</th><th>Added</th><th></th></tr></thead>
+    <tbody>
+      {% for p in protected_domains %}
+      <tr>
+        <td><code>{{ p.pattern }}</code></td>
+        <td>{{ p.match_type }}</td>
+        <td class="muted">{{ p.reason or '' }}</td>
+        <td>{{ p.source }}</td>
+        <td class="muted">{{ p.created_at }}</td>
+        <td>
+          <form class="inline" method="post" action="/protected/{{ p.pattern }}/remove">
+            <button type="submit" class="danger">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No protected domains configured.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="card">
+    <h3>Add a protected domain</h3>
+    <form method="post" action="/protected/add">
+      <input type="text" name="pattern" placeholder="example.com" required>
+      <select name="match_type">
+        <option value="exact">exact</option>
+        <option value="parent">parent (+ all subdomains)</option>
+        <option value="wildcard">wildcard (subdomains only)</option>
+      </select>
+      <input type="text" name="reason" placeholder="Reason">
+      <button type="submit" class="primary">Add</button>
+    </form>
+  </div>
+{% endblock %}

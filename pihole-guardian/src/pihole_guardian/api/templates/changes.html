@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Changes — Pi-hole Guardian{% endblock %}
+{% block content %}
+  <h2>Recent changes</h2>
+  <table>
+    <thead><tr><th>Change ID</th><th>Domain</th><th>Type</th><th>Applied</th><th>Actor</th><th>When</th><th></th></tr></thead>
+    <tbody>
+      {% for c in changes %}
+      <tr>
+        <td><code>{{ c.id }}</code></td>
+        <td><a href="/domains/{{ c.domain }}">{{ c.domain }}</a></td>
+        <td>{{ c.change_type }}</td>
+        <td>{{ 'simulated' if c.simulated else (c.applied and 'yes' or 'no') }}</td>
+        <td>{{ c.actor }}</td>
+        <td class="muted">{{ c.created_at }}</td>
+        <td>
+          {% if c.applied and not c.rolled_back and not c.simulated %}
+          <form class="inline" method="post" action="/changes/{{ c.id }}/rollback">
+            <button type="submit" class="danger">Rollback</button>
+          </form>
+          {% elif c.rolled_back %}<span class="muted">rolled back</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No changes recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
